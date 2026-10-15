@@ -1,6 +1,20 @@
 mGBA
 ====
 
+## Unofficial Wireless Adapter test fork
+
+This fork adds experimental, two-player local Wireless Adapter support to the
+official mGBA source. It does not include the unrelated controls, fast-forward,
+or e-Reader customizations from earlier private builds. Link Cable remains the
+default; choose the adapter with **File → GBA link type (next session)** before
+loading games. This is not an official mGBA release.
+
+[Setup and limitations](doc/WIRELESS-ADAPTER.md) ·
+[Candidate release notes](doc/WIRELESS-RELEASE-NOTES.md)
+
+The exact upstream-based candidate is awaiting the user's gameplay test before
+publication. The upstream project description and credits follow below.
+
 mGBA is an emulator for running Game Boy Advance games. It aims to be faster and more accurate than many existing Game Boy Advance emulators, as well as adding features that other emulators lack. It also supports Game Boy and Game Boy Color games.
 
 Up-to-date news and downloads can be found at [mgba.io](https://mgba.io/).

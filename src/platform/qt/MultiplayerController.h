@@ -6,19 +6,23 @@
 #pragma once
 
 #include <QHash>
+#include <QElapsedTimer>
 #include <QList>
 #include <QMutex>
 #include <QObject>
+#include <QWaitCondition>
 
 #include <mgba/core/core.h>
 #include <mgba/core/lockstep.h>
 #ifdef M_CORE_GBA
 #include <mgba/internal/gba/sio/lockstep.h>
+#include <mgba/internal/gba/sio/rfu.h>
 #endif
 #ifdef M_CORE_GB
 #include <mgba/internal/gb/sio/lockstep.h>
 #endif
 
+#include <atomic>
 #include <memory>
 
 struct GBSIOLockstepNode;
@@ -41,6 +45,9 @@ public:
 	int attached();
 	int playerId(CoreController*) const;
 	int saveId(CoreController*) const;
+	// Changes apply to the next session, after all current games close.
+	void setWirelessEnabled(bool enabled) { m_wirelessRequested.store(enabled, std::memory_order_relaxed); }
+	bool wirelessEnabled() const { return m_wirelessRequested.load(std::memory_order_relaxed); }
 
 signals:
 	void gameAttached();
@@ -50,6 +57,9 @@ private:
 	union Node {
 		GBSIOLockstepNode* gb;
 		GBASIOLockstepDriver* gba;
+#ifdef M_CORE_GBA
+		GBASIORFUDriver* rfu;
+#endif
 	};
 	struct Player {
 		Player(CoreController* controller);
@@ -65,6 +75,10 @@ private:
 		int saveId = 1;
 		int preferredId = 0;
 		bool attached = false;
+#ifdef M_CORE_GBA
+		bool wireless = false;
+		mLockstepThreadUser* wirelessUser = nullptr;
+#endif
 	};
 	struct LockstepUser : mLockstepThreadUser {
 		MultiplayerController* controller;
@@ -83,8 +97,21 @@ private:
 	};
 
 #ifdef M_CORE_GBA
+	class WirelessServiceThread;
 	GBASIOLockstepCoordinator m_gbaCoordinator;
+	GBASIORFUCoordinator m_gbaRfuCoordinator;
+	bool m_gbaWireless = false;
+	// The watchdog never reads CPU/adapter protocol state or player maps.
+	// This guard serializes coordinator lifetime with service, and must not
+	// be held while interrupting or joining any core or the service thread.
+	QMutex m_rfuServiceMutex;
+	QWaitCondition m_rfuServiceWake;
+	QElapsedTimer m_rfuServiceClock;
+	bool m_rfuServiceActive = false;
+	bool m_rfuServiceQuit = false;
+	std::unique_ptr<WirelessServiceThread> m_rfuServiceThread;
 #endif
+	std::atomic<bool> m_wirelessRequested{false};
 
 	mPlatform m_platform = mPLATFORM_NONE;
 	int m_nextPid = 0;

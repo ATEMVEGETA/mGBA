@@ -151,6 +151,9 @@ ConfigController::ConfigController(QObject* parent)
 	m_opts.interframeBlending = false;
 	mCoreConfigLoad(&m_config);
 	mCoreConfigLoadDefaults(&m_config, &m_opts);
+#ifdef M_CORE_GBA
+	mCoreConfigSetDefaultIntValue(&m_config, "gbaLinkMode", 0); // Original Link Cable.
+#endif
 #ifdef M_CORE_GB
 	mCoreConfigSetDefaultIntValue(&m_config, "sgb.borders", 1);
 	mCoreConfigSetDefaultIntValue(&m_config, "gb.colors", GB_COLORS_CGB);

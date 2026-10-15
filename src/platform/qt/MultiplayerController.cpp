@@ -18,8 +18,34 @@
 #endif
 
 #include <algorithm>
+#include <QThread>
 
 using namespace QGBA;
+
+#ifdef M_CORE_GBA
+class MultiplayerController::WirelessServiceThread : public QThread {
+public:
+	explicit WirelessServiceThread(MultiplayerController* controller)
+		: m_controller(controller) {}
+
+protected:
+	void run() override {
+		QMutexLocker serviceLock(&m_controller->m_rfuServiceMutex);
+		while (!m_controller->m_rfuServiceQuit) {
+			if (!m_controller->m_rfuServiceActive) {
+				m_controller->m_rfuServiceWake.wait(&m_controller->m_rfuServiceMutex);
+				continue;
+			}
+			GBASIORFUCoordinatorService(&m_controller->m_gbaRfuCoordinator,
+				static_cast<uint64_t>(std::max<qint64>(1, m_controller->m_rfuServiceClock.nsecsElapsed() / 1000)));
+			m_controller->m_rfuServiceWake.wait(&m_controller->m_rfuServiceMutex, 5);
+		}
+	}
+
+private:
+	MultiplayerController* m_controller;
+};
+#endif
 
 MultiplayerController::Player::Player(CoreController* coreController)
 	: controller(coreController)
@@ -30,7 +56,8 @@ int MultiplayerController::Player::id() const {
 	switch (controller->platform()) {
 #ifdef M_CORE_GBA
 	case mPLATFORM_GBA: {
-		int id = node.gba->d.deviceId(&node.gba->d);
+		GBASIODriver* driver = wireless ? &node.rfu->d : &node.gba->d;
+		int id = driver->deviceId(driver);
 		if (id >= 0) {
 			return id;
 		} else {
@@ -53,6 +80,11 @@ bool MultiplayerController::Player::operator<(const MultiplayerController::Playe
 }
 
 MultiplayerController::MultiplayerController() {
+#ifdef M_CORE_GBA
+	m_rfuServiceClock.start();
+	m_rfuServiceThread = std::make_unique<WirelessServiceThread>(this);
+	m_rfuServiceThread->start();
+#endif
 	mLockstepInit(&m_lockstep);
 	m_lockstep.context = this;
 	m_lockstep.lock = [](mLockstep* lockstep) {
@@ -192,9 +224,26 @@ MultiplayerController::MultiplayerController() {
 }
 
 MultiplayerController::~MultiplayerController() {
+#ifdef M_CORE_GBA
+	{
+		QMutexLocker serviceLock(&m_rfuServiceMutex);
+		m_rfuServiceQuit = true;
+		m_rfuServiceActive = false;
+		m_rfuServiceWake.wakeAll();
+	}
+	// The worker must exit before its coordinator or synchronization objects.
+	// Never join while holding the service/coordinator mutex.
+	m_rfuServiceThread->wait();
+	m_rfuServiceThread.reset();
+#endif
 	mLockstepDeinit(&m_lockstep);
 	if (m_platform == mPLATFORM_GBA) {
-		GBASIOLockstepCoordinatorDeinit(&m_gbaCoordinator);
+		if (m_gbaWireless) {
+			QMutexLocker serviceLock(&m_rfuServiceMutex);
+			GBASIORFUCoordinatorDeinit(&m_gbaRfuCoordinator);
+		} else {
+			GBASIOLockstepCoordinatorDeinit(&m_gbaCoordinator);
+		}
 	}
 }
 
@@ -210,7 +259,17 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 		switch (controller->platform()) {
 #ifdef M_CORE_GBA
 		case mPLATFORM_GBA:
-			GBASIOLockstepCoordinatorInit(&m_gbaCoordinator);
+			m_gbaWireless = wirelessEnabled();
+			if (m_gbaWireless) {
+				QMutexLocker serviceLock(&m_rfuServiceMutex);
+				GBASIORFUCoordinatorInit(&m_gbaRfuCoordinator);
+				GBASIORFUCoordinatorService(&m_gbaRfuCoordinator,
+					static_cast<uint64_t>(std::max<qint64>(1, m_rfuServiceClock.nsecsElapsed() / 1000)));
+				m_rfuServiceActive = true;
+				m_rfuServiceWake.wakeAll();
+			} else {
+				GBASIOLockstepCoordinatorInit(&m_gbaCoordinator);
+			}
 			break;
 #endif
 #ifdef M_CORE_GB
@@ -231,6 +290,13 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 		return false;
 	}
 
+#ifdef M_CORE_GBA
+	// The synchronized RFU implementation currently supports two players.
+	if (m_platform == mPLATFORM_GBA && m_gbaWireless && attached() >= 2) {
+		return false;
+	}
+#endif
+
 	Player player{controller};
 	for (int i = 0; i < MAX_GBAS; ++i) {
 		if (m_claimedIds & (1 << i)) {
@@ -243,6 +309,19 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 	switch (controller->platform()) {
 #ifdef M_CORE_GBA
 	case mPLATFORM_GBA: {
+		if (m_gbaWireless) {
+			GBASIORFUDriver* node = new GBASIORFUDriver;
+			GBASIORFUDriverCreate(node);
+			GBASIORFUDriverSetSynchronize(node, true);
+			GBASIORFUDriverSetPrearmed(node, true);
+			player.wirelessUser = new mLockstepThreadUser;
+			mLockstepThreadUserInit(player.wirelessUser, thread);
+			GBASIORFUDriverSetCooperative(node, &player.wirelessUser->d);
+			player.node.rfu = node;
+			player.wireless = true;
+			break;
+		}
+
 		if (attached() >= MAX_GBAS) {
 			return false;
 		}
@@ -325,6 +404,22 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 	++m_nextPid;
 	fixOrder();
 
+#ifdef M_CORE_GBA
+	if (m_platform == mPLATFORM_GBA && m_gbaWireless) {
+		// A wireless adapter remains plugged in even when no peer is nearby,
+		// and must be present before the first game's initial reset.
+		for (auto pid: m_players) {
+			Player& player = m_pids.find(pid).value();
+			if (player.attached) {
+				continue;
+			}
+			struct mCore* core = player.controller->thread()->core;
+			GBASIORFUCoordinatorAttach(&m_gbaRfuCoordinator, player.node.rfu);
+			core->setPeripheral(core, mPERIPH_GBA_LINK_PORT, &player.node.rfu->d);
+			player.attached = true;
+		}
+	} else
+#endif
 	if (doDelayedAttach) {
 		for (auto pid: m_players) {
 			Player& player = m_pids.find(pid).value();
@@ -374,6 +469,20 @@ void MultiplayerController::detachGame(CoreController* controller) {
 		GBA* gba = static_cast<GBA*>(thread->core->board);
 		Player& p = m_pids.find(pid).value();
 		GBASIODriver* node = gba->sio.driver;
+		if (p.wireless) {
+			if (node == &p.node.rfu->d) {
+				thread->core->setPeripheral(thread->core, mPERIPH_GBA_LINK_PORT, NULL);
+			}
+			if (p.attached) {
+				GBASIORFUCoordinatorDetach(&m_gbaRfuCoordinator, p.node.rfu);
+			}
+			// All owners are interrupted. Retire every durable sleep request
+			// before the driver or its frontend callbacks can be destroyed.
+			GBASIORFUDriverSetCooperative(p.node.rfu, nullptr);
+			delete p.node.rfu;
+			delete p.wirelessUser;
+			break;
+		}
 		if (node == &p.node.gba->d) {
 			thread->core->setPeripheral(thread->core, mPERIPH_GBA_LINK_PORT, NULL);
 		}
@@ -422,7 +531,14 @@ void MultiplayerController::detachGame(CoreController* controller) {
 	m_pids.remove(pid);
 	if (m_pids.size() == 0) {
 		if (m_platform == mPLATFORM_GBA) {
-			GBASIOLockstepCoordinatorDeinit(&m_gbaCoordinator);
+			if (m_gbaWireless) {
+				QMutexLocker serviceLock(&m_rfuServiceMutex);
+				m_rfuServiceActive = false;
+				GBASIORFUCoordinatorDeinit(&m_gbaRfuCoordinator);
+				m_gbaWireless = false;
+			} else {
+				GBASIOLockstepCoordinatorDeinit(&m_gbaCoordinator);
+			}
 		}
 		m_platform = mPLATFORM_NONE;
 	} else {
@@ -466,7 +582,11 @@ int MultiplayerController::attached() {
 		num = m_lockstep.attached;
 		break;
 	case mPLATFORM_GBA:
-		num = saturateCast<int>(GBASIOLockstepCoordinatorAttached(&m_gbaCoordinator));
+		if (m_gbaWireless) {
+			num = saturateCast<int>(GBASIORFUCoordinatorAttached(&m_gbaRfuCoordinator));
+		} else {
+			num = saturateCast<int>(GBASIOLockstepCoordinatorAttached(&m_gbaCoordinator));
+		}
 		break;
 	default:
 		break;

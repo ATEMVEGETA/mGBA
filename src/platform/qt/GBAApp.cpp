@@ -72,6 +72,16 @@ GBAApp::GBAApp(int& argc, char* argv[], ConfigController* config)
 	m_manager.setConfig(m_configController->config());
 	m_manager.setMultiplayerController(&m_multiplayer);
 
+#ifdef M_CORE_GBA
+	ConfigOption* gbaLinkMode = m_configController->addOption("gbaLinkMode");
+	gbaLinkMode->connect([this](const QVariant& value) {
+		// The multiplayer controller snapshots this choice before the first
+		// game's reset. A change while games are open applies next session.
+		m_multiplayer.setWirelessEnabled(value.toInt() == 1);
+	}, this);
+	m_configController->updateOption("gbaLinkMode");
+#endif
+
 	if (!m_configController->getQtOption("audioDriver").isNull()) {
 		AudioProcessor::setDriver(static_cast<AudioProcessor::Driver>(m_configController->getQtOption("audioDriver").toInt()));
 	}

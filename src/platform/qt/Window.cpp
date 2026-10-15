@@ -1474,6 +1474,12 @@ void Window::setupMenu(QMenuBar* menubar) {
 	m_multiWindow = m_actions.addAction(tr("New multiplayer window"), "multiWindow", GBAApp::app(), &GBAApp::newWindow, "file");
 
 #ifdef M_CORE_GBA
+	m_actions.addMenu(tr("GBA link type (next session)"), "gbaLinkType", "file");
+	ConfigOption* gbaLinkMode = m_config->addOption("gbaLinkMode");
+	gbaLinkMode->addValue(tr("Link Cable"), QVariant(0), &m_actions, "gbaLinkType");
+	gbaLinkMode->addValue(tr("Wireless Adapter (experimental)"), 1, &m_actions, "gbaLinkType");
+	m_config->updateOption("gbaLinkMode");
+
 	auto dolphin = m_actions.addAction(tr("Connect to Dolphin..."), "connectDolphin", openNamedTView<DolphinConnector>(&m_dolphinView, true, this), "file");
 	m_platformActions.insert(mPLATFORM_GBA, dolphin);
 #endif
