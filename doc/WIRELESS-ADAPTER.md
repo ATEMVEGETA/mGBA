@@ -38,8 +38,7 @@ Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
 
 1. Start this build of mGBA without opening a ROM. If games are already open,
    close all of them before selecting the link type.
-2. Choose **File → GBA link type (next session) → Wireless Adapter
-   (experimental)**.
+2. Choose **File → GBA link type (next session) → Wireless Adapter**.
 3. Open the first GBA game normally.
 4. Choose **File → New multiplayer window**, then open the second GBA game
    in that window. Both windows must belong to the same mGBA process; opening

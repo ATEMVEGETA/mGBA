@@ -16,6 +16,31 @@
 #include <QMenuBar>
 #include <QTemporaryDir>
 
+#ifdef QT_STATIC
+#include <QtPlugin>
+// Keep the application's static imports when replacing its main object.
+// Offscreen is an additional fixture-only import for headless execution.
+#ifdef Q_OS_WIN
+Q_IMPORT_PLUGIN(QJpegPlugin);
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
+#ifdef BUILD_QT_MULTIMEDIA
+Q_IMPORT_PLUGIN(QWindowsAudioPlugin);
+Q_IMPORT_PLUGIN(DSServicePlugin);
+#endif
+#elif defined(Q_OS_MAC)
+Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+#ifdef BUILD_QT_MULTIMEDIA
+Q_IMPORT_PLUGIN(CoreAudioPlugin);
+Q_IMPORT_PLUGIN(AVFServicePlugin);
+#endif
+#elif defined(Q_OS_UNIX)
+Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
+Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
+#endif
+Q_IMPORT_PLUGIN(QOffscreenIntegrationPlugin);
+#endif
+
 #ifdef BUILD_SDL
 #include <SDL.h>
 #endif
@@ -117,7 +142,7 @@ int main(int argc, char** argv) {
 	Window* second = app.newWindow();
 	CHECK(first && second);
 	QAction* cable[2] = {linkAction(first, QStringLiteral("Link Cable")), linkAction(second, QStringLiteral("Link Cable"))};
-	QAction* wireless[2] = {linkAction(first, QStringLiteral("Wireless Adapter (experimental)")), linkAction(second, QStringLiteral("Wireless Adapter (experimental)"))};
+	QAction* wireless[2] = {linkAction(first, QStringLiteral("Wireless Adapter")), linkAction(second, QStringLiteral("Wireless Adapter"))};
 	for (unsigned i = 0; i < 2; ++i) {
 		std::printf("MENU window=%u cable=%p checked=%d wireless=%p checked=%d\n", i,
 			static_cast<void*>(cable[i]), cable[i] ? cable[i]->isChecked() : -1,

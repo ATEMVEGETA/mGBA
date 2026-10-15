@@ -50,3 +50,51 @@ Nothing in these commands creates a GitHub repository or uploads a release.
 Publication remains conditional on the user's manual test, matched-source
 verification, review of provenance/applicable dependency notices, and explicit
 approval to publish. See [the setup guide](WIRELESS-ADAPTER.md).
+
+## Compact Windows build
+
+The compact candidate links the UI and support libraries statically. It does
+not copy DLLs from the developer runtime. Keep the larger developer package
+as a fallback; build this version in a separate directory.
+
+Prerequisites: the matching MSYS2 UCRT64 compiler and static dependency
+archives, plus these isolated prefixes under the ignored `build-compact-deps`:
+
+- `ucrt64/qt5-static`: MSYS2 Qt 5.15.19-1 static package, downloaded from
+  `https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-qt5-static-5.15.19-1-any.pkg.tar.zst`.
+  Verify SHA-256 `8bbbb97279f7a7b4c1abaadad10e16d0207b8bb43733e2d3fa0f290b64a4156c`
+  before extracting into `build-compact-deps`; do not replace the installed Qt.
+- `ffmpeg-static`: run `tools/build-wireless-ffmpeg.sh` with MSYS2 bash. Its
+  pinned sources and checksums reproduce mGBA's official recording-oriented
+  encoder/muxer/filter selection without the shared runtime's unrelated
+  decoder, speech recognition and shader dependencies.
+- `qt-third-party-notices`: retain the exact Qt bundled library notices and
+  their source-version provenance alongside the Qt package's own licenses.
+  Run `tools/collect-wireless-qt-notices.ps1` to collect these pinned notices.
+- `libelf-COPYING.LIB` and `libelf-COPYING.LIB.provenance.json`: retain the LGPL
+  notice for the installed libelf 0.8.13 separately (MSYS2 has no libelf notice
+  folder). The pinned source is `mgba-emu/dependencies` commit
+  `dad3d8a2bbc452b58139ebf21bc2ab9d81b9c4e9`, path
+  `libraries/libelf/COPYING.LIB`; SHA-256 is
+  `7a4436f9ec37603356791c87de3bc444989befd2682d29efb3d97604e04c1852`.
+
+Then, from a clean committed checkout:
+
+```powershell
+./tools/build-wireless-compact.ps1
+./tests/qt-wireless/run.ps1 -BuildDirectory ./build-compact-static -Compiler C:/msys64/ucrt64/bin/c++.exe
+git archive --format=zip --output=build-compact-static/source.zip HEAD
+./tools/package-wireless-compact.ps1 -RuntimePrefix C:/msys64/ucrt64 -StaticQtPrefix ./build-compact-deps/ucrt64/qt5-static -FFmpegSourceDirectory ./build-compact-deps/FFmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1 -SourceArchive ./build-compact-static/source.zip
+```
+
+This recipe requires CMake 3.19 or later. It preserves Qt's imported static
+dependencies, selects `.a` rather than DLL import archives, and includes the
+SDL2/font-rendering static dependency closure. The packager rejects any
+non-Windows PE import, records exact source/binary checksums, and retains the
+normal shaders, scripts, game database and license material. Run all RFU
+tests above as well, plus isolated Windows-only-PATH version/menu checks.
+
+Statically linked GPL/LGPL and other dependencies require an appropriate
+source/build/relinking distribution plan before publication. Preserve the
+dependency sources, build metadata and objects; this local test ZIP alone is
+not the complete public-release compliance bundle.

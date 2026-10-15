@@ -477,8 +477,11 @@ if(QT_STATIC)
 			set(QWINDOWS_DEPS ${QT}EventDispatcherSupport ${QT}FontDatabaseSupport ${QT}ThemeSupport ${QT}WindowsUIAutomationSupport)
 		endif()
 		list(APPEND QT_LIBRARIES ${QT}::QWindowsIntegrationPlugin ${QWINDOWS_DEPS} amstrmid uxtheme imm32 -static-libgcc -static-libstdc++)
-		set_target_properties(${QT}::Core PROPERTIES INTERFACE_LINK_LIBRARIES "${QTPCRE};version;winmm;ssl;crypto;ws2_32;iphlpapi;crypt32;userenv;netapi32;wtsapi32;ncrypt;secur32")
-		set_target_properties(${QT}::Gui PROPERTIES INTERFACE_LINK_LIBRARIES ${OPENGL_LIBRARY} ${OPENGLES2_LIBRARY})
+		# Keep dependencies supplied by modern static Qt package configs (for
+		# example bundled HarfBuzz/PNG and Windows platform libraries). Older
+		# toolchains still need the additional libraries listed here.
+		set_property(TARGET ${QT}::Core APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${QTPCRE};version;winmm;ssl;crypto;ws2_32;iphlpapi;crypt32;userenv;netapi32;wtsapi32;ncrypt;secur32")
+		set_property(TARGET ${QT}::Gui APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${OPENGL_LIBRARY} ${OPENGLES2_LIBRARY})
 	elseif(APPLE)
 		find_package(Cups)
 		find_package(${QT}PrintSupport)

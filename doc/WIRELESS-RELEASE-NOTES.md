@@ -8,7 +8,7 @@ This is an unofficial experimental mGBA build, not an upstream release.
 ## What this adds
 
 - A native **File → GBA link type (next session)** menu with **Link Cable**
-  and **Wireless Adapter (experimental)** choices.
+  and **Wireless Adapter** choices.
 - Local Wireless Adapter communication for two GBA games opened through
   **File → New multiplayer window** in the same application process.
 - RFU command, packet, and serial-timing handling, plus bounded cooperative
