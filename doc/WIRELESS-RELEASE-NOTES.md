@@ -50,6 +50,14 @@ in-game saving, or closing both windows.
 
 ## Package and source status
 
+The window-sizing follow-up also corrects an upstream development regression:
+an empty display no longer shrinks the startup window or prevents the frame-
+size menu from working before a ROM is loaded. The normal 2× default, saved
+window dimensions and existing frame-lock/fullscreen behavior are retained.
+Size changes made without a ROM are saved on normal exit and restored the
+next time the application opens, using the existing configuration mechanism.
+This correction does not change Wireless Adapter communication.
+
 The first compact candidate (`ed565e7f7`) crashes during native OpenGL startup
 and must not be used. Its prebuilt static OpenGL dispatch library depended on
 DLL initialization that does not run when linked into an executable. The

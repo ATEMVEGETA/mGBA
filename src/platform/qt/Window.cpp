@@ -263,7 +263,12 @@ void Window::argumentsPassed() {
 
 QSize Window::contentSize(bool fallback) const {
 	if (m_display) {
-		return m_display->contentSize();
+		const QSize size = m_display->contentSize();
+		// An idle display has no game image yet. Keep the controller/default
+		// fallback available to the frame-size menu until dimensions exist.
+		if (!size.isEmpty()) {
+			return size;
+		}
 	}
 	if (m_controller) {
 		return m_controller->screenDimensions();
@@ -1125,7 +1130,9 @@ void Window::reloadDisplayDriver() {
 	});
 
 	connect(m_display.get(), &QGBA::Display::contentSizeChanged, [this](const QSize& size) {
-		if (m_savedScale > 0 && !m_config->getOption("lockFrameSize").toInt()) {
+		// Initializing or clearing an empty scene must not collapse the
+		// window's default or saved size to the minimum.
+		if (!size.isEmpty() && m_savedScale > 0 && !m_config->getOption("lockFrameSize").toInt()) {
 			resizeFrame(size * m_savedScale);
 		}
 	});
