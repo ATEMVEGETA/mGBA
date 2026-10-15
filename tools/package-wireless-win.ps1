@@ -74,8 +74,8 @@ $windowsModules = [Collections.Generic.HashSet[string]]::new([StringComparer]::O
 advapi32.dll avrt.dll authz.dll bcrypt.dll bcryptprimitives.dll cabinet.dll cfgmgr32.dll
 clbcatq.dll combase.dll comctl32.dll comdlg32.dll credui.dll crypt32.dll cryptbase.dll cryptsp.dll
 d2d1.dll d3d9.dll d3d11.dll d3d12.dll d3dcompiler_47.dll dbghelp.dll devobj.dll dinput8.dll dnsapi.dll
-dwmapi.dll dwrite.dll dxgi.dll dxva2.dll gdi32.dll gdi32full.dll glu32.dll hid.dll iertutil.dll imm32.dll
-iphlpapi.dll kernel32.dll kernelbase.dll mf.dll mfplat.dll mfreadwrite.dll mfsrcsnk.dll
+dwmapi.dll dwrite.dll dxgi.dll dxva2.dll evr.dll gdi32.dll gdi32full.dll gdiplus.dll glu32.dll hid.dll iertutil.dll imm32.dll
+iphlpapi.dll kernel32.dll kernelbase.dll mf.dll mfplat.dll mfreadwrite.dll mfsrcsnk.dll ncrypt.dll
 mmdevapi.dll mpr.dll msacm32.dll msasn1.dll msdmo.dll msimg32.dll msvcp_win.dll msvcrt.dll
 mswsock.dll netapi32.dll netutils.dll normaliz.dll nsi.dll ntdll.dll ole32.dll oleaut32.dll opengl32.dll
 pdh.dll powrprof.dll profapi.dll propsys.dll psapi.dll quartz.dll rasapi32.dll rasman.dll rpcrt4.dll
