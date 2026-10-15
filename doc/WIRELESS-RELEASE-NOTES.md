@@ -50,6 +50,14 @@ in-game saving, or closing both windows.
 
 ## Package and source status
 
+The first compact candidate (`ed565e7f7`) crashes during native OpenGL startup
+and must not be used. Its prebuilt static OpenGL dispatch library depended on
+DLL initialization that does not run when linked into an executable. The
+replacement uses mGBA's own libepoxy dependency fork with static PE TLS
+initialization, and adds a production-entry/native OpenGL startup regression
+test. This is a packaging dependency correction, not a change to RFU timing
+or the game's wireless behavior.
+
 The planned release includes a Windows x64 portable Qt build, the source
 archive corresponding to that exact binary, and SHA-256 checksums. ROMs,
 games, BIOS files, and saves are not included. Upstream licenses and required

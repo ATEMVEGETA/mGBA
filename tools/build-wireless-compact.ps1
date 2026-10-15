@@ -9,11 +9,17 @@ if (-not [IO.Path]::IsPathRooted($BuildDirectory)) { $BuildDirectory = Join-Path
 $deps = Join-Path $root 'build-compact-deps'
 $qt = Join-Path $deps 'ucrt64/qt5-static'
 $ffmpeg = Join-Path $deps 'ffmpeg-static'
+$epoxy = Join-Path $deps 'epoxy-static'
 if (-not (Test-Path (Join-Path $qt 'lib/libQt5Core.a')) -or
-    -not (Test-Path (Join-Path $ffmpeg 'lib/pkgconfig/libavcodec.pc'))) {
-    throw 'Prepare the matching static Qt and recording-only FFmpeg prefixes first; see doc/WIRELESS-BUILD.md.'
+    -not (Test-Path (Join-Path $ffmpeg 'lib/pkgconfig/libavcodec.pc')) -or
+    -not (Test-Path (Join-Path $epoxy 'lib/libepoxy.a'))) {
+    throw 'Prepare the matching static Qt, recording-only FFmpeg and static-TLS epoxy prefixes first; see doc/WIRELESS-BUILD.md.'
 }
 $RuntimePrefix = (Resolve-Path -LiteralPath $RuntimePrefix).Path.Replace('\', '/')
+$epoxySymbols = & "$RuntimePrefix/bin/nm.exe" --defined-only (Join-Path $epoxy 'lib/libepoxy.a') | Out-String
+if ($LASTEXITCODE -ne 0 -or $epoxySymbols -notmatch '(?m)\b[DdRr]\s+dllmain_callback\s*$') {
+    throw "The static epoxy archive must contain the official fork's PE TLS callback; a stock static archive is unsafe here."
+}
 $savedPath = $env:PATH
 $savedPkg = $env:PKG_CONFIG_PATH
 $savedPkgLib = $env:PKG_CONFIG_LIBDIR
@@ -28,7 +34,8 @@ try {
     $arguments = @(
         '-S', $root, '-B', $BuildDirectory, '-G', 'Ninja',
         '-U', '*libav*', '-U', '*LIBAV*', '-U', '*libsw*', '-U', '*LIBSW*',
-        '-DCMAKE_BUILD_TYPE=Release', "-DCMAKE_PREFIX_PATH=$ffmpeg;$qt;$RuntimePrefix",
+        '-DCMAKE_BUILD_TYPE=Release', "-DCMAKE_PREFIX_PATH=$ffmpeg;$qt;$epoxy;$RuntimePrefix",
+        "-DEPOXY_LIBRARIES=$epoxy/lib/libepoxy.a", "-DEPOXY_INCLUDE_DIRS=$epoxy/include",
         "-DCMAKE_PROJECT_INCLUDE=$PSScriptRoot/compact-win64.cmake",
         "-DCMAKE_MAKE_PROGRAM=$RuntimePrefix/bin/ninja.exe",
         "-DCMAKE_C_COMPILER=$RuntimePrefix/bin/cc.exe", "-DCMAKE_CXX_COMPILER=$RuntimePrefix/bin/c++.exe",

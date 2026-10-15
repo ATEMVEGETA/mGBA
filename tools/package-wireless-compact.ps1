@@ -2,6 +2,7 @@ param(
     [string]$BuildDirectory = 'build-compact-static',
     [Parameter(Mandatory = $true)][string]$RuntimePrefix,
     [Parameter(Mandatory = $true)][string]$StaticQtPrefix,
+    [string]$StaticEpoxyPrefix = 'build-compact-deps/epoxy-static',
     [Parameter(Mandatory = $true)][string]$FFmpegSourceDirectory,
     [Parameter(Mandatory = $true)][string]$SourceArchive,
     [string]$OutputDirectory = 'build-compact-static/dist/mGBA-Wireless-Adapter-compact-win64'
@@ -15,6 +16,7 @@ function Resolve-Input([string]$path) {
 $BuildDirectory = Resolve-Input $BuildDirectory
 $RuntimePrefix = Resolve-Input $RuntimePrefix
 $StaticQtPrefix = Resolve-Input $StaticQtPrefix
+$StaticEpoxyPrefix = Resolve-Input $StaticEpoxyPrefix
 $FFmpegSourceDirectory = Resolve-Input $FFmpegSourceDirectory
 $SourceArchive = Resolve-Input $SourceArchive
 if (-not [IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory = Join-Path $root $OutputDirectory }
@@ -87,7 +89,7 @@ $licenses = Join-Path $OutputDirectory 'licenses'
 New-Item -ItemType Directory -Path $licenses | Out-Null
 # Aggregate complete notices without hundreds of loose runtime notice files.
 # This broad collection intentionally retains some unused toolchain notices.
-$noticeRoots = @((Join-Path $RuntimePrefix 'share/licenses'), (Join-Path $StaticQtPrefix 'share/licenses'))
+$noticeRoots = @((Join-Path $RuntimePrefix 'share/licenses'), (Join-Path $StaticQtPrefix 'share/licenses'), (Join-Path $StaticEpoxyPrefix 'share/licenses'))
 $common = Join-Path (Split-Path -Parent $RuntimePrefix) 'usr/share/licenses/common'
 if (Test-Path -LiteralPath $common) { $noticeRoots += $common }
 $builder = [Text.StringBuilder]::new()
@@ -130,6 +132,7 @@ Copy-Item -LiteralPath (Join-Path $qtNotices 'README.md') -Destination (Join-Pat
     "Source archive SHA-256: $((Get-FileHash -LiteralPath $SourceArchive -Algorithm SHA256).Hash)",
     'Official upstream base: 143adf5aa2a60c6036810b0cd72445e13d74b0e6',
     'Platform: Windows x64 / static Qt 5 / MinGW-w64 UCRT',
+    'OpenGL dispatch: mGBA libepoxy fork 8b7513e88c4f23b6b8d6757b306e431af79df1ff, built with static PE TLS callback.',
     'No third-party runtime DLLs or external Qt plugins are needed.',
     'Gameplay testing of this exact package is pending.',
     'No games, ROMs, BIOS, saves, personal controls, or diagnostic capture included.'

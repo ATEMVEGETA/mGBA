@@ -68,6 +68,14 @@ archives, plus these isolated prefixes under the ignored `build-compact-deps`:
   pinned sources and checksums reproduce mGBA's official recording-oriented
   encoder/muxer/filter selection without the shared runtime's unrelated
   decoder, speech recognition and shader dependencies.
+- `epoxy-static`: build the official mGBA dependency fork of libepoxy at
+  `8b7513e88c4f23b6b8d6757b306e431af79df1ff` with **build-time**
+  `EPOXY_STATIC_LIB` enabled. Run `tools/build-wireless-epoxy.sh` with MSYS2
+  bash. This fork supplies a PE TLS callback so OpenGL dispatch storage is
+  initialized for the executable and each graphics thread. The ordinary
+  MSYS2 static archive relies on DLL entry-point initialization and crashes
+  during native OpenGL startup when used directly in an executable. Defining
+  the macro only while compiling mGBA cannot repair that prebuilt archive.
 - `qt-third-party-notices`: retain the exact Qt bundled library notices and
   their source-version provenance alongside the Qt package's own licenses.
   Run `tools/collect-wireless-qt-notices.ps1` to collect these pinned notices.
@@ -83,6 +91,7 @@ Then, from a clean committed checkout:
 ```powershell
 ./tools/build-wireless-compact.ps1
 ./tests/qt-wireless/run.ps1 -BuildDirectory ./build-compact-static -Compiler C:/msys64/ucrt64/bin/c++.exe
+./tests/qt-startup/run.ps1 -BuildDirectory ./build-compact-static -Compiler C:/msys64/ucrt64/bin/c++.exe
 git archive --format=zip --output=build-compact-static/source.zip HEAD
 ./tools/package-wireless-compact.ps1 -RuntimePrefix C:/msys64/ucrt64 -StaticQtPrefix ./build-compact-deps/ucrt64/qt5-static -FFmpegSourceDirectory ./build-compact-deps/FFmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1 -SourceArchive ./build-compact-static/source.zip
 ```
@@ -92,7 +101,9 @@ dependencies, selects `.a` rather than DLL import archives, and includes the
 SDL2/font-rendering static dependency closure. The packager rejects any
 non-Windows PE import, records exact source/binary checksums, and retains the
 normal shaders, scripts, game database and license material. Run all RFU
-tests above as well, plus isolated Windows-only-PATH version/menu checks.
+tests above as well, plus isolated Windows-only-PATH version/menu checks and
+the real production entry-point/native OpenGL startup test. The offscreen
+menu suite alone does not cover default graphics initialization.
 
 Statically linked GPL/LGPL and other dependencies require an appropriate
 source/build/relinking distribution plan before publication. Preserve the
