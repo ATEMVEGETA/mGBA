@@ -116,29 +116,6 @@ The following mappers are partially supported:
 - Li Cheng (missing logo switching)
 - Sintax (missing logo switching)
 
-### Planned features
-
-- Networked multiplayer link cable support.
-- Dolphin/JOY bus link cable support.
-- MP2k audio mixing, for higher quality sound than hardware.
-- Re-recording support for tool-assist runs.
-- A comprehensive debug suite.
-- Wireless adapter support.
-
-Supported Platforms
--------------------
-
-- Windows 7 or newer
-- OS X 10.9 (Mavericks)[<sup>[3]</sup>](#osxver) or newer
-- Linux
-- FreeBSD
-- Nintendo 3DS
-- Nintendo Switch
-- Wii
-- PlayStation Vita
-
-Other Unix-like platforms, such as OpenBSD, are known to work as well, but are untested and not fully supported.
-
 ### System requirements
 
 Requirements are minimal. Any computer that can run Windows Vista or newer should be able to handle emulation. Support for OpenGL 1.1 or newer is also required, with OpenGL 3.2 or newer for shaders and advanced features.
