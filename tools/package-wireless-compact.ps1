@@ -1,5 +1,6 @@
 param(
     [string]$BuildDirectory = 'build-compact-static',
+    [string]$DependencyDirectory = 'build-compact-deps',
     [Parameter(Mandatory = $true)][string]$RuntimePrefix,
     [Parameter(Mandatory = $true)][string]$StaticQtPrefix,
     [string]$StaticEpoxyPrefix = 'build-compact-deps/epoxy-static',
@@ -14,6 +15,7 @@ function Resolve-Input([string]$path) {
     return (Resolve-Path -LiteralPath $path).Path
 }
 $BuildDirectory = Resolve-Input $BuildDirectory
+$DependencyDirectory = Resolve-Input $DependencyDirectory
 $RuntimePrefix = Resolve-Input $RuntimePrefix
 $StaticQtPrefix = Resolve-Input $StaticQtPrefix
 $StaticEpoxyPrefix = Resolve-Input $StaticEpoxyPrefix
@@ -79,9 +81,10 @@ foreach ($shader in Get-ChildItem -LiteralPath (Join-Path $root 'res/shaders') -
 }
 $docs = Join-Path $OutputDirectory 'docs'
 New-Item -ItemType Directory -Path $docs | Out-Null
-foreach ($name in @('WIRELESS-ADAPTER.md', 'WIRELESS-RELEASE-NOTES.md', 'WIRELESS-BUILD.md')) {
+foreach ($name in @('WIRELESS-ADAPTER.md', 'WIRELESS-RELEASE-NOTES.md', 'WIRELESS-BUILD.md', 'WIRELESS-LICENSES.md')) {
     Copy-Item -LiteralPath (Join-Path $root "doc/$name") -Destination $docs
 }
+Copy-Item -LiteralPath (Join-Path $root 'doc/licenses') -Destination $docs -Recurse
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'wireless-portable/COMPACT-README.md') -Destination (Join-Path $OutputDirectory 'README.md')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'wireless-portable/COMPACT-NOTICES.md') -Destination $docs
 [IO.File]::WriteAllLines((Join-Path $docs 'RUNTIME-DEPENDENCIES.txt'), [string[]]$imports)
@@ -105,7 +108,7 @@ foreach ($relative in @('inih/LICENSE.txt', 'discord-rpc/LICENSE', 'discord-rpc/
     [void]$builder.AppendLine([IO.File]::ReadAllText((Join-Path $root "src/third-party/$relative")))
     [void]$builder.AppendLine()
 }
-$nvHeaders = Join-Path $root 'build-compact-deps/nv-codec-headers-c69278340ab1d5559c7d7bf0edf615dc33ddbba7/include/ffnvcodec'
+$nvHeaders = Join-Path $DependencyDirectory 'nv-codec-headers-c69278340ab1d5559c7d7bf0edf615dc33ddbba7/include/ffnvcodec'
 foreach ($file in Get-ChildItem -LiteralPath $nvHeaders -File -Filter '*.h') {
     [void]$builder.AppendLine("=== NV codec headers c69278340: $($file.Name) ===")
     $notice = [regex]::Match([IO.File]::ReadAllText($file.FullName), '(?s)\A\s*/\*.*?\*/').Value
@@ -114,13 +117,13 @@ foreach ($file in Get-ChildItem -LiteralPath $nvHeaders -File -Filter '*.h') {
     [void]$builder.AppendLine()
 }
 [IO.File]::WriteAllText((Join-Path $licenses 'DEPENDENCY-LICENSES.txt'), $builder.ToString())
-Copy-Item -LiteralPath (Join-Path $root 'build-compact-deps/libelf-COPYING.LIB') -Destination $licenses
-Copy-Item -LiteralPath (Join-Path $root 'build-compact-deps/libelf-COPYING.LIB.provenance.json') -Destination $docs
+Copy-Item -LiteralPath (Join-Path $DependencyDirectory 'libelf-COPYING.LIB') -Destination $licenses
+Copy-Item -LiteralPath (Join-Path $DependencyDirectory 'libelf-COPYING.LIB.provenance.json') -Destination $docs
 foreach ($file in Get-ChildItem -LiteralPath $FFmpegSourceDirectory -File -Filter 'COPYING*') {
     Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $licenses ('FFmpeg-' + $file.Name))
 }
 Copy-Item -LiteralPath (Join-Path $FFmpegSourceDirectory 'LICENSE.md') -Destination (Join-Path $licenses 'FFmpeg-LICENSE.md')
-$qtNotices = Join-Path $root 'build-compact-deps/qt-third-party-notices'
+$qtNotices = Join-Path $DependencyDirectory 'qt-third-party-notices'
 if (-not (Test-Path -LiteralPath $qtNotices -PathType Container)) { throw 'Collect the matching Qt bundled third-party notices first.' }
 Copy-Item -LiteralPath (Join-Path $qtNotices 'THIRD-PARTY-NOTICES-Qt-5.15.19.txt') -Destination $licenses
 Copy-Item -LiteralPath (Join-Path $qtNotices 'download-manifest.json') -Destination (Join-Path $docs 'QT-NOTICE-PROVENANCE.json')

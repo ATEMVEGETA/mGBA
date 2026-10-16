@@ -1,12 +1,14 @@
 param(
     [string]$RuntimePrefix = 'C:/msys64/ucrt64',
     [string]$BuildDirectory = 'build-compact-static',
+    [string]$DependencyDirectory = '',
     [int]$Jobs = 4
 )
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (-not [IO.Path]::IsPathRooted($BuildDirectory)) { $BuildDirectory = Join-Path $root $BuildDirectory }
-$deps = Join-Path $root 'build-compact-deps'
+if ($DependencyDirectory -and -not [IO.Path]::IsPathRooted($DependencyDirectory)) { $DependencyDirectory = Join-Path $root $DependencyDirectory }
+$deps = if ($DependencyDirectory) { (Resolve-Path -LiteralPath $DependencyDirectory).Path } else { Join-Path $root 'build-compact-deps' }
 $qt = Join-Path $deps 'ucrt64/qt5-static'
 $ffmpeg = Join-Path $deps 'ffmpeg-static'
 $epoxy = Join-Path $deps 'epoxy-static'

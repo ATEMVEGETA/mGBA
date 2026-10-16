@@ -291,8 +291,9 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 	}
 
 #ifdef M_CORE_GBA
-	// The synchronized RFU implementation currently supports two players.
-	if (m_platform == mPLATFORM_GBA && m_gbaWireless && attached() >= 2) {
+	// The Qt player, input and save slots support up to MAX_GBAS adapters.
+	// Reject excess games before claiming an ID or allocating thread hooks.
+	if (m_platform == mPLATFORM_GBA && m_gbaWireless && attached() >= MAX_GBAS) {
 		return false;
 	}
 #endif

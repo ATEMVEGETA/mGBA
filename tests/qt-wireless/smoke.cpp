@@ -47,6 +47,7 @@ Q_IMPORT_PLUGIN(QOffscreenIntegrationPlugin);
 
 #include <cstdio>
 #include <cstdlib>
+#include <array>
 
 using namespace QGBA;
 
@@ -65,6 +66,22 @@ template<class Tag, typename Tag::type Member> struct MemberAccess {
 	friend typename Tag::type testMember(Tag) { return Member; }
 };
 template struct MemberAccess<MultiplayerMember, &GBAApp::m_multiplayer>;
+
+struct ClaimedIdsMember {
+	using type = int MultiplayerController::*;
+	friend type testMember(ClaimedIdsMember);
+};
+struct NextPidMember {
+	using type = int MultiplayerController::*;
+	friend type testMember(NextPidMember);
+};
+struct ClaimedSavesMember {
+	using type = QHash<QPair<QString, QString>, int> MultiplayerController::*;
+	friend type testMember(ClaimedSavesMember);
+};
+template struct MemberAccess<ClaimedIdsMember, &MultiplayerController::m_claimedIds>;
+template struct MemberAccess<NextPidMember, &MultiplayerController::m_nextPid>;
+template struct MemberAccess<ClaimedSavesMember, &MultiplayerController::m_claimedSaves>;
 
 static QAction* linkAction(Window* window, const QString& text) {
 	for (QAction* top : window->menuBar()->actions()) {
@@ -183,6 +200,110 @@ int main(int argc, char** argv) {
 		multiplayer.detachGame(one.controller.get());
 	}
 	wireless[1]->trigger();
+	{
+		// The fixtures deliberately share a ROM path, so the production save-ID
+		// allocator must reserve four different suffixes without opening saves.
+		std::array<std::unique_ptr<InertCore>, MAX_GBAS> cores;
+		std::array<GBASIORFUDriver*, MAX_GBAS> adapters{};
+		std::array<uint32_t, MAX_GBAS> sessions{};
+		std::array<int, MAX_GBAS> saveIds{};
+		const int nextPidBefore = multiplayer.*testMember(NextPidMember{});
+		CHECK(multiplayer.wirelessEnabled());
+		CHECK(multiplayer.attached() == 0);
+		CHECK((multiplayer.*testMember(ClaimedIdsMember{})) == 0);
+		CHECK((multiplayer.*testMember(ClaimedSavesMember{})).isEmpty());
+		for (unsigned i = 0; i < cores.size(); ++i) {
+			cores[i] = std::make_unique<InertCore>(config);
+			CHECK(multiplayer.attachGame(cores[i]->controller.get()));
+			CHECK(multiplayer.attached() == static_cast<int>(i + 1));
+			GBASIODriver* driver = cores[i]->driver();
+			CHECK(driver && driver->driverId(driver) == 0x52465500);
+			adapters[i] = reinterpret_cast<GBASIORFUDriver*>(driver);
+			sessions[i] = adapters[i]->radioSession;
+			saveIds[i] = multiplayer.saveId(cores[i]->controller.get());
+			CHECK(adapters[i]->playerId == static_cast<int>(i));
+			CHECK(adapters[i]->cooperativeUser);
+			CHECK(sessions[i] != 0);
+			CHECK(saveIds[i] == static_cast<int>(i + 1));
+			CHECK(multiplayer.playerId(cores[i]->controller.get()) == static_cast<int>(i));
+			for (unsigned j = 0; j < i; ++j) {
+				CHECK(adapters[i] != adapters[j]);
+				CHECK(adapters[i]->cooperativeUser != adapters[j]->cooperativeUser);
+				CHECK(adapters[i]->coordinator == adapters[j]->coordinator);
+				CHECK(sessions[i] != sessions[j]);
+				CHECK(saveIds[i] != saveIds[j]);
+			}
+		}
+		CHECK((multiplayer.*testMember(ClaimedIdsMember{})) == (1 << MAX_GBAS) - 1);
+		CHECK((multiplayer.*testMember(NextPidMember{})) == nextPidBefore + MAX_GBAS);
+
+		InertCore excess(config);
+		GBASIODriver* excessDriver = excess.driver();
+		const int claimedIdsBefore = multiplayer.*testMember(ClaimedIdsMember{});
+		const int nextPidAtCapacity = multiplayer.*testMember(NextPidMember{});
+		const auto claimedSavesBefore = multiplayer.*testMember(ClaimedSavesMember{});
+		CHECK(!multiplayer.attachGame(excess.controller.get()));
+		CHECK(multiplayer.attached() == MAX_GBAS);
+		CHECK(excess.driver() == excessDriver);
+		CHECK(multiplayer.playerId(excess.controller.get()) == -1);
+		CHECK(multiplayer.saveId(excess.controller.get()) == -1);
+		CHECK((multiplayer.*testMember(ClaimedIdsMember{})) == claimedIdsBefore);
+		CHECK((multiplayer.*testMember(NextPidMember{})) == nextPidAtCapacity);
+		CHECK((multiplayer.*testMember(ClaimedSavesMember{})) == claimedSavesBefore);
+		for (unsigned i = 0; i < cores.size(); ++i) {
+			CHECK(cores[i]->driver() == &adapters[i]->d);
+			CHECK(adapters[i]->radioSession == sessions[i]);
+			CHECK(multiplayer.saveId(cores[i]->controller.get()) == saveIds[i]);
+		}
+
+		// Retiring a middle slot must leave every survivor attached. Rejoining
+		// uses the available adapter/save slots but a fresh registration session.
+		const unsigned middle = 1;
+		const int middleId = adapters[middle]->playerId;
+		multiplayer.detachGame(cores[middle]->controller.get());
+		CHECK(multiplayer.attached() == MAX_GBAS - 1);
+		CHECK(!cores[middle]->driver());
+		CHECK((multiplayer.*testMember(ClaimedIdsMember{})) == (claimedIdsBefore & ~(1 << middleId)));
+		for (unsigned i = 0; i < cores.size(); ++i) {
+			if (i == middle) continue;
+			CHECK(cores[i]->driver() == &adapters[i]->d);
+			CHECK(adapters[i]->radioSession == sessions[i]);
+			CHECK(multiplayer.saveId(cores[i]->controller.get()) == saveIds[i]);
+		}
+		CHECK(multiplayer.attachGame(cores[middle]->controller.get()));
+		CHECK(multiplayer.attached() == MAX_GBAS);
+		GBASIODriver* rejoined = cores[middle]->driver();
+		CHECK(rejoined && rejoined->driverId(rejoined) == 0x52465500);
+		adapters[middle] = reinterpret_cast<GBASIORFUDriver*>(rejoined);
+		CHECK(adapters[middle]->playerId == middleId);
+		CHECK(adapters[middle]->radioSession != 0);
+		CHECK(adapters[middle]->radioSession != sessions[middle]);
+		CHECK(multiplayer.saveId(cores[middle]->controller.get()) == saveIds[middle]);
+		sessions[middle] = adapters[middle]->radioSession;
+		for (unsigned i = 0; i < cores.size(); ++i) {
+			if (i == middle) continue;
+			CHECK(adapters[middle]->radioSession != sessions[i]);
+			CHECK(cores[i]->driver() == &adapters[i]->d);
+		}
+		CHECK((multiplayer.*testMember(ClaimedIdsMember{})) == claimedIdsBefore);
+		CHECK((multiplayer.*testMember(ClaimedSavesMember{})) == claimedSavesBefore);
+
+		// Close the initial player first, then the other slots out of order.
+		const unsigned closeOrder[MAX_GBAS] = {0, 2, 1, 3};
+		for (unsigned i = 0; i < cores.size(); ++i) {
+			multiplayer.detachGame(cores[closeOrder[i]]->controller.get());
+			CHECK(!cores[closeOrder[i]]->driver());
+			CHECK(multiplayer.attached() == static_cast<int>(cores.size() - i - 1));
+			for (unsigned j = i + 1; j < cores.size(); ++j) {
+				const unsigned survivor = closeOrder[j];
+				CHECK(cores[survivor]->driver() == &adapters[survivor]->d);
+				CHECK(adapters[survivor]->radioSession == sessions[survivor]);
+			}
+		}
+		CHECK((multiplayer.*testMember(ClaimedIdsMember{})) == 0);
+		CHECK((multiplayer.*testMember(ClaimedSavesMember{})).isEmpty());
+		CHECK((multiplayer.*testMember(NextPidMember{})) == nextPidBefore + MAX_GBAS + 1);
+	}
 	config.write();
 	{
 		ConfigController reloaded;

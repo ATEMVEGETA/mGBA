@@ -1104,17 +1104,21 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 					break;
 				}
 				if (!client->active || (rfu->synchronize && client->radioSession != message->sourceSession)) {
+					bool otherClients = false;
+					for (unsigned i = 0; i < 4; ++i) if (i != slot && rfu->clients[i].active) otherClients = true;
 					memset(client, 0, sizeof(*client));
 					client->active = true;
 					client->peer = message->source;
 					client->radioSession = message->sourceSession;
 					if (rfu->synchronize) {
-						/* Join establishes a radio-clock origin, independent of
-						 * how long this emulator was running before its peer. */
+						/* The first join establishes an origin. Adding a peer
+						 * must not invalidate the existing clients' clocks. */
 						_radioCancel(rfu, false);
 						rfu->radioQueued = false;
-						rfu->radioClock = 0;
-						rfu->radioLastTime = mTimingCurrentTime(_timing(rfu));
+						if (!otherClients) {
+							rfu->radioClock = 0;
+							rfu->radioLastTime = mTimingCurrentTime(_timing(rfu));
+						}
 					}
 					client->device = 0x6500 | ((rfu->playerId < 0 ? 0 : rfu->playerId) << 6) |
 						((rfu->generation * 4 + slot + 1) & 0x3F);
@@ -1123,6 +1127,7 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 				client->radioSession = message->sourceSession;
 				reply.slot = slot;
 				reply.destinationDevice = client->device;
+				if (rfu->synchronize) reply.relativeCycles = _radioClock(rfu);
 				_log(rfu, "event accepted peer=%u slot=%u device=%04X", client->peer, slot, client->device);
 			}
 		}
@@ -1148,7 +1153,9 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 			rfu->hostRadioSession = message->sourceSession;
 			rfu->radioLastTicket = 0;
 			rfu->radioQueued = false;
-			rfu->radioClock = 0;
+			/* Adopt the host's published origin without reading peer timing.
+			 * A late joiner may later be the only remaining client. */
+			rfu->radioClock = rfu->synchronize ? message->relativeCycles : 0;
 			rfu->radioLastTime = mTimingCurrentTime(_timing(rfu));
 			_log(rfu, "event connected host=%04X slot=%u device=%04X", rfu->hostDevice, rfu->clientNumber, rfu->deviceId);
 		}
@@ -1323,6 +1330,13 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 		    message->slot == rfu->clientNumber &&
 		    (!rfu->synchronize || (message->sourceSession == rfu->hostRadioSession &&
 		                          message->targetSession == rfu->radioSession))) {
+			if (rfu->synchronize) {
+				/* A host with several clients uses the existing fan-out
+				 * exchange, not a one-client rendezvous. Retire that owner's
+				 * old readiness/ticket before consuming its staged response. */
+				_radioCancel(rfu, false);
+				rfu->radioQueued = false;
+			}
 			if (message->bytes && !_replacePacket(&rfu->rx, message->data, message->bytes)) {
 				_log(rfu, "event packetDrop host bytes=%u", message->bytes);
 			}
@@ -1346,6 +1360,9 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 				/* Unread RX from an older exchange must not finish a new
 				 * SendDataWait before its staged response has gone out. */
 				rfu->clientWaitNeedsExchange = false;
+				/* An actual RF exchange can contain no application bytes.
+				 * It still completes this WAIT; unread RX is not its proof. */
+				if (rfu->synchronize) rfu->radioNotice = true;
 			}
 			reply.type = RFU_KEEPALIVE;
 			reply.slot = rfu->clientNumber;

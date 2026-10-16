@@ -26,6 +26,13 @@ or modification.
 
 ## Matching release materials
 
+This branch is a separate, unpublished four-player candidate. Its matching
+application source is the source archive identified by its own BUILD-INFO
+and checksums, not the older commit listed below. The dependency libraries
+are unchanged; the earlier release's dependency-source archive still applies.
+Build outputs and a full Git bundle are retained locally for this candidate.
+Any later public executable needs its own matching build/relink archive.
+
 The [v0.1.0-beta.1 release](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1)
 provides these materials alongside the compact runtime ZIP:
 

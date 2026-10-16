@@ -3571,6 +3571,7 @@ static void testFreshClaimGuardsOldUnreadStandaloneWait(void) {
 }
 
 #include "rfu-cooperative-tests.h"
+#include "rfu-multiplayer-tests.h"
 
 int main(void) {
 	setvbuf(stdout, NULL, _IONBF, 0);
@@ -3652,6 +3653,10 @@ int main(void) {
 	testCompletedNoticeUnreadyOfferDeadline();
 	testFreshClaimGuardsOldUnreadStandaloneWait();
 	testCooperativeScheduling();
+	testFourWayDiscovery();
+	testFourWayIndependentPairs();
+	testMultiClientExchange();
+	testMultiClientMembership();
 	printf("All %u RFU regression cases passed (%u assertions).\n", testCases, assertions);
 	return 0;
 }

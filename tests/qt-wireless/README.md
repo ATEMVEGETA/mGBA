@@ -29,6 +29,13 @@ registers and timing only. Their inert thread fixtures execute no CPU loop;
 normal frontend interrupt/stop/join cleanup still runs. The RFU watchdog is
 the production worker, not a replacement.
 
+Four inert cores also exercise the real Wireless Adapter attachment limit.
+They verify distinct driver/thread-hook identities, registration sessions and
+same-ROM save IDs; rejection of a fifth core without consuming player IDs,
+save claims or PIDs; middle-slot detach/rejoin with a fresh registration; and
+out-of-order cleanup while surviving adapters remain attached. The production
+four-window/input limit is unchanged, as are cable and Game Boy link behavior.
+
 This is not gameplay, wireless protocol throughput, frontend CPU concurrency,
 audio, visual-rendering, real-button or Playnite coverage. It supplements the
 RFU protocol/native-owner suites and does not prove game compatibility. The

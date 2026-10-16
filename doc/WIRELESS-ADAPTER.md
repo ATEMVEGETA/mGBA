@@ -1,7 +1,7 @@
 # Wireless Adapter for mGBA
 
 An unofficial, experimental addition to the mGBA Qt frontend for local
-Wireless Adapter communication between two emulated Game Boy Advance systems
+Wireless Adapter communication between up to four emulated Game Boy Advance systems
 on one computer. This is not an upstream mGBA release.
 
 The original Link Cable mode remains available and is the default. Wireless
@@ -9,8 +9,9 @@ Adapter mode is a separate choice, not a replacement for the cable.
 
 ## Current status
 
-This upstream-based port is a public beta. Broader gameplay compatibility of
-the exact packaged frontend is still being established.
+This branch is an unpublished four-player test candidate based on the public
+two-player beta. Four-player Union Room gameplay and broader compatibility of
+the exact packaged frontend still need manual testing.
 
 Earlier custom development builds received successful user reports for
 Pokémon Jump, Dodrio Berry Picking, the Union Room, the Trade Room, and an
@@ -19,7 +20,7 @@ they do not certify this new port, every game revision, or every save-file
 combination. Wireless timing and compatibility remain experimental.
 
 See [the release notes](WIRELESS-RELEASE-NOTES.md) for package status and known
-limitations. Downloads, checksums and matching source are on the
+limitations. The previous two-player build, not this candidate, is on the
 [beta release page](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1).
 Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
 
@@ -41,9 +42,10 @@ Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
    close all of them before selecting the link type.
 2. Choose **File → GBA link type (next session) → Wireless Adapter**.
 3. Open the first GBA game normally.
-4. Choose **File → New multiplayer window**, then open the second GBA game
-   in that window. Both windows must belong to the same mGBA process; opening
-   a second independent copy of the program does not create this local link.
+4. Choose **File → New multiplayer window**, then open the next GBA game
+   in that window. Repeat for up to four players total. All windows must
+   belong to the same mGBA process; opening independent copies of the program
+   does not create this local link.
 5. Start the wireless activity from the games' own menus. Follow their normal
    host/join instructions.
 
@@ -53,12 +55,12 @@ mid-session. The choice is stored in mGBA's normal configuration as
 `gbaLinkMode`: `0` for Link Cable and `1` for Wireless Adapter. Editing the
 configuration manually is not necessary.
 
-Keep both games running and responsive. If one window is paused or closed,
-the other game may report a lost connection.
+Keep all games running and responsive. If one window is paused or closed,
+the other games may report a lost connection.
 
 ## Use the Link Cable instead
 
-Close the games in both multiplayer windows, select **File → GBA link type
+Close the games in all multiplayer windows, select **File → GBA link type
 (next session) → Link Cable**, then open the games again. Use this mode for
 activities that require the cable. One multiplayer session cannot use both
 adapter types at once.
@@ -69,8 +71,9 @@ earlier custom builds.
 
 ## Limitations and troubleshooting
 
-- Wireless mode supports two local GBA players in the same application
-  process. More players are not supported by this implementation.
+- This candidate allows up to four local GBA players in the same application
+  process. Actual activity limits still depend on the game. It does not add
+  an unlimited number of players or a fifth frontend window.
 - There is no LAN or internet transport, connection to another emulator,
   or bridge to a physical Wireless Adapter or real GBA.
 - A savestate does not serialize the shared RFU session. Do not expect loading
@@ -79,7 +82,7 @@ earlier custom builds.
 - Successful discovery or entry to a room does not prove every later activity
   will work. Check the actual interaction, transfer, in-game save, disconnect,
   and closing behavior you intend to use.
-- If a connection fails repeatedly, close both games and start a fresh
+- If a connection fails repeatedly, close all games and start a fresh
   session at normal speed. Do not overwrite your backup saves while
   investigating a failure.
 - Diagnostic capture is not enabled by the normal release configuration.
@@ -87,7 +90,7 @@ earlier custom builds.
 
 For a useful bug report, include the exact build version, operating system,
 game titles and revisions, selected link type, and steps to reproduce the
-problem. Say whether one or both windows slow down, whether music is affected,
+problem. Say which windows slow down, whether music is affected,
 and whether the problem also occurs with only one game open. Screenshots are
 helpful; do not attach ROMs, BIOS files, or private save files.
 

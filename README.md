@@ -3,11 +3,18 @@ mGBA
 
 > [!IMPORTANT]
 > This is the **unofficial mGBA Wireless Adapter fork**. It adds local wireless
-> communication for two Game Boy Advance games on one computer, with a native
+> communication for up to four Game Boy Advance games on one computer, with a native
 > **File → GBA link type (next session) → Wireless Adapter** menu option.
 > It is not affiliated with or endorsed by the upstream mGBA project.
 
-## Wireless Adapter download
+## Four-player local test candidate
+
+This branch adds four-player attachment, discovery, independent pair
+interactions and multi-client exchanges. It is an **unpublished test candidate**;
+four-player Union Room gameplay still needs user testing. The published
+two-player release and the separate personal custom source are unchanged.
+
+## Previous two-player Wireless Adapter download
 
 **[Download mGBA Wireless Adapter for Windows x64](https://github.com/ATEMVEGETA/mgba/releases/download/wireless-adapter-v0.1.0-beta.1/mGBA-0.11-Wireless-Adapter-Windows-x64-v0.1.0-beta.1.zip)**
 
@@ -21,8 +28,9 @@ build/relink materials. Only the Windows ZIP is needed to run the emulator.
 [Build instructions](doc/WIRELESS-BUILD.md)
 
 Link Cable remains the default. Close all games, select **Wireless Adapter**,
-open the first game, then use **File → New multiplayer window** for the second.
-Both games must run in the same application process; this is not LAN or
+open the first game, then use **File → New multiplayer window** for each other
+player, up to four windows total. All games must run in the same application
+process; this is not LAN or
 internet multiplayer, or a connection to real hardware.
 
 The fork is based on mGBA development master, not the official 0.10.5 release.

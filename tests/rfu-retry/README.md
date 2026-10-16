@@ -29,10 +29,16 @@ the actual waits occur outside the coordinator mutex.
 
 ## Scope
 
-The deterministic suite contains 151 cases covering command framing, serial
+The deterministic suite contains 160 cases, retaining the original 151 for command framing, serial
 clock ownership, packet snapshots, retry and timeout bounds, session isolation,
 prearmed readiness, completion-notice ownership, cooperative wakeups, lifecycle
 retirement, and independent timer progress during an unoffered client WAIT.
+Additional multiplayer cases cover four advertisers discovering all peers,
+two independent synchronized pairs across different player assignments,
+disconnection/reconnection, pair/group membership transitions with each
+possible surviving client, and one host with three clients exchanging
+distinct payloads or zero-byte notifications. They use the real serial
+command/timing fixture; no game behavior is simulated or certified.
 The native stress fixture contains 64 cases. Assertion counts in the native
 stress fixture vary with thread interleaving.
 

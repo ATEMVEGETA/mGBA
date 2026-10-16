@@ -19,9 +19,11 @@ cmake --build build-wireless --target mgba mgba-qt -j4
 ./tests/qt-wireless/run.ps1
 ```
 
-Run test variants sequentially. The deterministic suites cover 151 cases;
+Run test variants sequentially. The deterministic suites cover 160 cases,
+including four-adapter discovery, pair and group regression coverage;
 the Windows concurrent-owner suite covers 64; the actual Qt configuration,
-menu and session-selection smoke covers 41 checks without game assets.
+menu, session-selection and four-core attachment smoke covers 194 checks
+without game assets.
 Read each test README for prerequisites and coverage limits. These checks do
 not replace gameplay testing of the exact packaged binary.
 
@@ -104,6 +106,15 @@ normal shaders, scripts, game database and license material. Run all RFU
 tests above as well, plus isolated Windows-only-PATH version/menu checks and
 the real production entry-point/native OpenGL startup test. The offscreen
 menu suite alone does not cover default graphics initialization.
+
+An independent checkout may reuse already-built matching dependencies
+read-only by passing `-DependencyDirectory <path-to-build-compact-deps>` to
+both compact helpers and a separate `-BuildDirectory`. Also pass the matching
+`-StaticQtPrefix`, `-StaticEpoxyPrefix` and `-FFmpegSourceDirectory` to the
+packager. This does not modify the earlier checkout or its release artifacts.
+For this four-player local candidate the user performs the gameplay/startup
+test; only protocol, native-mutex/stress and inert offscreen integration
+fixtures were run during preparation.
 
 Statically linked GPL/LGPL and other dependencies require matching source,
 build and relink materials before publication. Preserve dependency sources,

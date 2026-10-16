@@ -1,5 +1,28 @@
 # mGBA Wireless Adapter — beta release notes
 
+## Unpublished four-player candidate
+
+This branch extends the local Qt wireless session to four GBA windows. It
+removes the two-player attachment restriction while retaining the existing
+four-window, save-slot and input limits. The two-player rendezvous fast path
+is retained for independent conversations; multi-client exchanges use the
+existing fan-out transport with corrected synchronized completion handling,
+including zero-byte RF packets. Late joiners adopt the host's relative clock
+origin without resetting the other clients, so returning from a group to a
+pair does not compare incompatible timing epochs.
+
+Automated checks cover four-way discovery, two independent pairs, host-to-three-
+client payloads and empty exchanges, pair/group membership transitions with
+different surviving clients, and four-core attachment/teardown. They
+do not establish four-player Union Room gameplay compatibility. User testing
+of discovery, interaction, leaving/rejoining, saving and closing is pending.
+No ROM/BIOS/gameplay test was run for this candidate.
+
+The published release below is unchanged. Do not mistake its download for
+the four-player test candidate; there is no new GitHub release yet.
+
+## Previous published release
+
 Status: v0.1.0-beta.1, published at the user's request. Wider compatibility
 testing of this upstream-based package is still needed.
 
@@ -37,7 +60,8 @@ in-game saving, or closing both windows.
 
 ## Known limits
 
-- Two local GBA players only, in one application process.
+- The published beta supports two local GBA players; this unpublished branch
+  permits four windows in one process, pending gameplay confirmation.
 - No LAN, internet play, other-emulator transport, or real-hardware adapter
   connection.
 - Shared RFU sessions are not serialized in savestates. Loading states or
