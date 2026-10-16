@@ -26,9 +26,6 @@ Both games must run in the same application process; this is not LAN or
 internet multiplayer, or a connection to real hardware.
 
 The fork is based on mGBA development master, not the official 0.10.5 release.
-It retains upstream controls, fast-forward and e-Reader behavior, without the
-unrelated customizations from earlier personal builds. The window can also be
-resized before loading a ROM and remembers its size after normal closing.
 
 This is a beta while compatibility receives wider testing. Earlier custom
 development builds received successful reports for Pokémon Jump, Dodrio Berry
