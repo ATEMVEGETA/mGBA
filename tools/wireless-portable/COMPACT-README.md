@@ -15,4 +15,12 @@ See [the full guide](docs/WIRELESS-ADAPTER.md) for details and limitations.
 Its exact source commit and checksums are recorded under `docs`.
 
 This is the wireless-only port: original mGBA controls, fast-forward and
-e-Reader behavior are retained. Nothing has been uploaded to GitHub yet.
+e-Reader behavior are retained. Source, dependency sources, build/relink
+materials and release checksums are available at:
+
+https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1
+
+This compact executable statically includes GPL/LGPL libraries and is
+distributed as a combined work under GNU GPL version 3. Original MPL source
+terms and all dependency notices are retained. See `docs/WIRELESS-LICENSES.md`
+and `docs/licenses/GPL-3.0.txt`. You may modify, rebuild and relink it.

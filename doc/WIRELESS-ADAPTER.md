@@ -9,8 +9,8 @@ Adapter mode is a separate choice, not a replacement for the cable.
 
 ## Current status
 
-This upstream-based port is a release candidate. Its exact packaged binaries
-have not yet completed manual gameplay testing.
+This upstream-based port is a public beta. Broader gameplay compatibility of
+the exact packaged frontend is still being established.
 
 Earlier custom development builds received successful user reports for
 Pokémon Jump, Dodrio Berry Picking, the Union Room, the Trade Room, and an
@@ -19,7 +19,8 @@ they do not certify this new port, every game revision, or every save-file
 combination. Wireless timing and compatibility remain experimental.
 
 See [the release notes](WIRELESS-RELEASE-NOTES.md) for package status and known
-limitations. No public download is linked from this draft guide yet.
+limitations. Downloads, checksums and matching source are on the
+[beta release page](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1).
 Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
 
 ## Before testing
@@ -97,5 +98,6 @@ provide the matching source archive and SHA-256 checksums. Keep the program
 and dependency files from the same package together. Do not mix an executable
 from one candidate with files from another.
 
-No release hashes are claimed in this draft. They will be recorded with the
-final verified package, after manual testing of that exact build.
+The release page records the binary's exact source commit and SHA-256 checksums.
+The source, dependency-source and build/relink archives are separate from the
+small runtime ZIP; see [source and licensing information](WIRELESS-LICENSES.md).

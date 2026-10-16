@@ -1,19 +1,45 @@
 mGBA
 ====
 
-## Unofficial Wireless Adapter test fork
+> [!IMPORTANT]
+> This is the **unofficial mGBA Wireless Adapter fork**. It adds local wireless
+> communication for two Game Boy Advance games on one computer, with a native
+> **File → GBA link type (next session) → Wireless Adapter** menu option.
+> It is not affiliated with or endorsed by the upstream mGBA project.
 
-This fork adds experimental, two-player local Wireless Adapter support to the
-official mGBA source. It does not include the unrelated controls, fast-forward,
-or e-Reader customizations from earlier private builds. Link Cable remains the
-default; choose the adapter with **File → GBA link type (next session)** before
-loading games. This is not an official mGBA release.
+## Wireless Adapter download
+
+**[Download mGBA Wireless Adapter for Windows x64](https://github.com/ATEMVEGETA/mgba/releases/download/wireless-adapter-v0.1.0-beta.1/mGBA-0.11-Wireless-Adapter-Windows-x64-v0.1.0-beta.1.zip)**
+
+See the [v0.1.0-beta.1 release page](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1)
+for SHA-256 checksums, the exact matching mGBA source, dependency sources and
+build/relink materials. Only the Windows ZIP is needed to run the emulator.
 
 [Setup and limitations](doc/WIRELESS-ADAPTER.md) ·
-[Candidate release notes](doc/WIRELESS-RELEASE-NOTES.md)
+[Release notes](doc/WIRELESS-RELEASE-NOTES.md) ·
+[Source and licenses](doc/WIRELESS-LICENSES.md) ·
+[Build instructions](doc/WIRELESS-BUILD.md)
 
-The exact upstream-based candidate is awaiting the user's gameplay test before
-publication. The upstream project description and credits follow below.
+Link Cable remains the default. Close all games, select **Wireless Adapter**,
+open the first game, then use **File → New multiplayer window** for the second.
+Both games must run in the same application process; this is not LAN or
+internet multiplayer, or a connection to real hardware.
+
+The fork is based on mGBA development master, not the official 0.10.5 release.
+It retains upstream controls, fast-forward and e-Reader behavior, without the
+unrelated customizations from earlier personal builds. The window can also be
+resized before loading a ROM and remembers its size after normal closing.
+
+This is a beta while compatibility receives wider testing. Earlier custom
+development builds received successful reports for Pokémon Jump, Dodrio Berry
+Picking, the Union Room, Trade Room and Aurora Ticket delivery; those reports
+are not a guarantee for every game, revision or save combination. Back up your
+saves. No games, ROMs, BIOS or saves are included.
+
+The compact executable statically includes GPL/LGPL dependencies; its combined
+distribution uses GNU GPL version 3. Individual source licenses and upstream
+notices are retained, including mGBA's MPL 2.0 source terms; see the license guide
+above. The original upstream project description and credits follow below.
 
 mGBA is an emulator for running Game Boy Advance games. It aims to be faster and more accurate than many existing Game Boy Advance emulators, as well as adding features that other emulators lack. It also supports Game Boy and Game Boy Color games.
 
@@ -282,3 +308,7 @@ mGBA contains the following third-party libraries:
 - [SQLite3](https://www.sqlite.org), which is public domain.
 
 If you are a game publisher and wish to license mGBA for commercial usage, please email [licensing@mgba.io](mailto:licensing@mgba.io) for more information.
+
+## Development Note
+
+This project was developed with the assistance of OpenAI Codex (AI), which helped with coding, debugging, and implementing new features. I provided the ideas, requirements, and direction for the project, along with testing and feedback throughout development.

@@ -10,8 +10,8 @@ original relative file names. The collection deliberately includes some unused
 package notices; it is not a list of every library linked into this binary.
 The PE imports in `RUNTIME-DEPENDENCIES.txt` are Windows system components only.
 
-This candidate is for local testing. Before public distribution, retain the
-matching source, applicable dependency source and build information, and
-materials required for relinking/rebuilding statically linked libraries.
-The presence of notices does not by itself establish compliance with every
-distribution term. No public release is authorized by this packaging step.
+The public beta release provides the matching mGBA source, complete applicable
+dependency source packages and build/relink materials as separate assets on
+the same release page. See `WIRELESS-LICENSES.md` for source access and the GPL
+version 3 terms for the combined executable; source-file terms are retained.
+Notices alone are not a replacement for the accompanying source materials.

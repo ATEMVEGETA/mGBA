@@ -1,7 +1,7 @@
 # mGBA Wireless Adapter — beta release notes
 
-Status: unpublished release candidate. The exact upstream-based package is
-awaiting manual gameplay validation; a public release is not yet confirmed.
+Status: v0.1.0-beta.1, published at the user's request. Wider compatibility
+testing of this upstream-based package is still needed.
 
 This is an unofficial experimental mGBA build, not an upstream release.
 
@@ -66,17 +66,13 @@ initialization, and adds a production-entry/native OpenGL startup regression
 test. This is a packaging dependency correction, not a change to RFU timing
 or the game's wireless behavior.
 
-The planned release includes a Windows x64 portable Qt build, the source
-archive corresponding to that exact binary, and SHA-256 checksums. ROMs,
-games, BIOS files, and saves are not included. Upstream licenses and required
-dependency notices must accompany the package.
+The [release page](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1)
+provides the Windows x64 portable build, exact matching mGBA source ZIP,
+dependency-source archive, build/relink materials and SHA-256 checksums.
+The executable source is `0441dab16deef170afa41aed170b65ca3b341623`, version
+`0.11-codex/wireless-adapter-9160-0441dab16`. Subsequent documentation-only
+commits do not change that binary/source pairing.
 
-Before publication, the release record must contain:
-
-- The final version/tag and full source commit.
-- The binary archive and matching source archive filenames.
-- Their SHA-256 checksums.
-- The results and remaining limitations of manual tests on that exact build.
-
-These details are intentionally not filled with provisional values. This
-draft does not announce a downloadable build or claim a completed release.
+ROMs, games, BIOS files and saves are not included. Upstream licenses and
+dependency notices are retained. See [the licensing guide](WIRELESS-LICENSES.md)
+for the GPL version 3 combined executable and original MPL source terms.

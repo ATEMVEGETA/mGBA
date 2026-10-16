@@ -105,7 +105,10 @@ tests above as well, plus isolated Windows-only-PATH version/menu checks and
 the real production entry-point/native OpenGL startup test. The offscreen
 menu suite alone does not cover default graphics initialization.
 
-Statically linked GPL/LGPL and other dependencies require an appropriate
-source/build/relinking distribution plan before publication. Preserve the
-dependency sources, build metadata and objects; this local test ZIP alone is
-not the complete public-release compliance bundle.
+Statically linked GPL/LGPL and other dependencies require matching source,
+build and relink materials before publication. Preserve dependency sources,
+build metadata and objects; the runtime ZIP alone is not the source bundle.
+The v0.1.0-beta.1 release provides complete dependency-source and build/relink
+archives alongside its exact mGBA source ZIP. See [source and licensing
+information](WIRELESS-LICENSES.md). Regenerate and verify those materials for
+any later executable; do not reuse a preceding version's source manifest.
