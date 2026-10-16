@@ -1,8 +1,8 @@
 # mGBA Wireless Adapter — beta release notes
 
-## Unpublished four-player candidate
+## v0.2.0-beta.1 — four local players
 
-This branch extends the local Qt wireless session to four GBA windows. It
+This version extends the local Qt wireless session to four GBA windows. It
 removes the two-player attachment restriction while retaining the existing
 four-window, save-slot and input limits. The two-player rendezvous fast path
 is retained for independent conversations; multi-client exchanges use the
@@ -14,12 +14,16 @@ pair does not compare incompatible timing epochs.
 Automated checks cover four-way discovery, two independent pairs, host-to-three-
 client payloads and empty exchanges, pair/group membership transitions with
 different surviving clients, and four-core attachment/teardown. They
-do not establish four-player Union Room gameplay compatibility. User testing
-of discovery, interaction, leaving/rejoining, saving and closing is pending.
-No ROM/BIOS/gameplay test was run for this candidate.
+do not replace gameplay testing. The user subsequently reported successful
+four-player Pokémon Union Room play and authorized this release. That report
+does not certify every title, revision, activity or save combination. No
+ROM/BIOS/gameplay test was run by the coding agent during preparation.
 
-The published release below is unchanged. Do not mistake its download for
-the four-player test candidate; there is no new GitHub release yet.
+The executables are byte-identical to the user-tested four-player candidate.
+Executable source: `4884301060924ba4083de0a3e84cc9e461b0133c`.
+Version: `0.11-codex/wireless-multiplayer-9162-488430106`.
+The release tag points to this exact commit. Later documentation changes do
+not alter the executable/source pairing. The prior release remains available.
 
 ## Previous published release
 
@@ -60,8 +64,8 @@ in-game saving, or closing both windows.
 
 ## Known limits
 
-- The published beta supports two local GBA players; this unpublished branch
-  permits four windows in one process, pending gameplay confirmation.
+- v0.1.0-beta.1 supports two local GBA players; v0.2.0-beta.1 permits four
+  windows in one process, with user-confirmed four-player Union Room play.
 - No LAN, internet play, other-emulator transport, or real-hardware adapter
   connection.
 - Shared RFU sessions are not serialized in savestates. Loading states or

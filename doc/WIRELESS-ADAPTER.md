@@ -9,9 +9,9 @@ Adapter mode is a separate choice, not a replacement for the cable.
 
 ## Current status
 
-This branch is an unpublished four-player test candidate based on the public
-two-player beta. Four-player Union Room gameplay and broader compatibility of
-the exact packaged frontend still need manual testing.
+Version v0.2.0-beta.1 extends the original two-player beta to four local players.
+The user successfully tested four-player Pokémon Union Room play with its
+exact executable. Broader compatibility still needs manual testing.
 
 Earlier custom development builds received successful user reports for
 Pokémon Jump, Dodrio Berry Picking, the Union Room, the Trade Room, and an
@@ -20,8 +20,8 @@ they do not certify this new port, every game revision, or every save-file
 combination. Wireless timing and compatibility remain experimental.
 
 See [the release notes](WIRELESS-RELEASE-NOTES.md) for package status and known
-limitations. The previous two-player build, not this candidate, is on the
-[beta release page](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1).
+limitations. Downloads and matching source are on the
+[beta release page](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1).
 Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
 
 ## Before testing
@@ -71,7 +71,7 @@ earlier custom builds.
 
 ## Limitations and troubleshooting
 
-- This candidate allows up to four local GBA players in the same application
+- This version allows up to four local GBA players in the same application
   process. Actual activity limits still depend on the game. It does not add
   an unlimited number of players or a fifth frontend window.
 - There is no LAN or internet transport, connection to another emulator,

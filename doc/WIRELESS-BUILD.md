@@ -112,14 +112,14 @@ read-only by passing `-DependencyDirectory <path-to-build-compact-deps>` to
 both compact helpers and a separate `-BuildDirectory`. Also pass the matching
 `-StaticQtPrefix`, `-StaticEpoxyPrefix` and `-FFmpegSourceDirectory` to the
 packager. This does not modify the earlier checkout or its release artifacts.
-For this four-player local candidate the user performs the gameplay/startup
-test; only protocol, native-mutex/stress and inert offscreen integration
-fixtures were run during preparation.
+For this four-player build, the user confirmed successful Union Room play.
+Only protocol, native-mutex/stress and inert offscreen integration fixtures
+were run by the coding agent during preparation.
 
 Statically linked GPL/LGPL and other dependencies require matching source,
 build and relink materials before publication. Preserve dependency sources,
 build metadata and objects; the runtime ZIP alone is not the source bundle.
-The v0.1.0-beta.1 release provides complete dependency-source and build/relink
+The v0.2.0-beta.1 release provides complete dependency-source and build/relink
 archives alongside its exact mGBA source ZIP. See [source and licensing
 information](WIRELESS-LICENSES.md). Regenerate and verify those materials for
 any later executable; do not reuse a preceding version's source manifest.

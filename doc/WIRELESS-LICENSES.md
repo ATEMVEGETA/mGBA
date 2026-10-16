@@ -26,12 +26,15 @@ or modification.
 
 ## Matching release materials
 
-This branch is a separate, unpublished four-player candidate. Its matching
-application source is the source archive identified by its own BUILD-INFO
-and checksums, not the older commit listed below. The dependency libraries
-are unchanged; the earlier release's dependency-source archive still applies.
-Build outputs and a full Git bundle are retained locally for this candidate.
-Any later public executable needs its own matching build/relink archive.
+The [v0.2.0-beta.1 four-player release](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1)
+provides the exact application source at
+`4884301060924ba4083de0a3e84cc9e461b0133c`, plus its own build/relink archive.
+Its executable version is `0.11-codex/wireless-multiplayer-9162-488430106`.
+The dependency libraries are unchanged; the accompanying dependency-source
+archive is byte-identical to the earlier release's source payload described
+below. BUILD-INFO and SHA-256 checksums distinguish each release's materials.
+
+### Previous release and unchanged dependencies
 
 The [v0.1.0-beta.1 release](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1)
 provides these materials alongside the compact runtime ZIP:
@@ -60,7 +63,7 @@ its PKGBUILD hash is
 matching the binary package's `.BUILDINFO`. Each other package's exact version,
 source URL, hash and signature report is recorded in the source manifest.
 
-The runtime itself is unchanged from the approved window-size-fix build.
+The v0.1.0-beta.1 runtime is unchanged from the approved window-size-fix build.
 Only release-facing documentation, license information and checksums are
 updated for publication. Later repository documentation commits are separate
 from the immutable binary source revision above.

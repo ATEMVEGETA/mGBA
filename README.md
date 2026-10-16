@@ -7,18 +7,17 @@ mGBA
 > **File → GBA link type (next session) → Wireless Adapter** menu option.
 > It is not affiliated with or endorsed by the upstream mGBA project.
 
-## Four-player local test candidate
+## Wireless Adapter v0.2.0-beta.1
 
-This branch adds four-player attachment, discovery, independent pair
-interactions and multi-client exchanges. It is an **unpublished test candidate**;
-four-player Union Room gameplay still needs user testing. The published
-two-player release and the separate personal custom source are unchanged.
+This version extends local Wireless Adapter play from two to **up to four
+players**. Four-player Pokémon Union Room play was tested successfully by the
+user. Compatibility with every game, revision, save or activity is not implied.
 
-## Previous two-player Wireless Adapter download
+## Wireless Adapter download
 
-**[Download mGBA Wireless Adapter for Windows x64](https://github.com/ATEMVEGETA/mgba/releases/download/wireless-adapter-v0.1.0-beta.1/mGBA-0.11-Wireless-Adapter-Windows-x64-v0.1.0-beta.1.zip)**
+**[Download mGBA Wireless Adapter for Windows x64](https://github.com/ATEMVEGETA/mGBA/releases/download/wireless-adapter-v0.2.0-beta.1/mGBA-0.11-Wireless-Adapter-Windows-x64-v0.2.0-beta.1.zip)**
 
-See the [v0.1.0-beta.1 release page](https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1)
+See the [v0.2.0-beta.1 release page](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1)
 for SHA-256 checksums, the exact matching mGBA source, dependency sources and
 build/relink materials. Only the Windows ZIP is needed to run the emulator.
 
@@ -30,13 +29,9 @@ build/relink materials. Only the Windows ZIP is needed to run the emulator.
 Link Cable remains the default. Close all games, select **Wireless Adapter**,
 open the first game, then use **File → New multiplayer window** for each other
 player, up to four windows total. All games must run in the same application
-process; this is not LAN or
-internet multiplayer, or a connection to real hardware.
+process; this is not LAN or internet multiplayer, or a connection to real hardware.
 
 The fork is based on mGBA development master, not the official 0.10.5 release.
-It retains upstream controls, fast-forward and e-Reader behavior, without the
-unrelated customizations from earlier personal builds. The window can also be
-resized before loading a ROM and remembers its size after normal closing.
 
 This is a beta while compatibility receives wider testing. Earlier custom
 development builds received successful reports for Pokémon Jump, Dodrio Berry
@@ -123,29 +118,6 @@ The following mappers are partially supported:
 - GGB-81 (missing logo switching)
 - Li Cheng (missing logo switching)
 - Sintax (missing logo switching)
-
-### Planned features
-
-- Networked multiplayer link cable support.
-- Dolphin/JOY bus link cable support.
-- MP2k audio mixing, for higher quality sound than hardware.
-- Re-recording support for tool-assist runs.
-- A comprehensive debug suite.
-- Wireless adapter support.
-
-Supported Platforms
--------------------
-
-- Windows 7 or newer
-- OS X 10.9 (Mavericks)[<sup>[3]</sup>](#osxver) or newer
-- Linux
-- FreeBSD
-- Nintendo 3DS
-- Nintendo Switch
-- Wii
-- PlayStation Vita
-
-Other Unix-like platforms, such as OpenBSD, are known to work as well, but are untested and not fully supported.
 
 ### System requirements
 

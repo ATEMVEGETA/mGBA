@@ -15,14 +15,16 @@ Back up your saves before testing. This package has no ROMs, BIOS or saves.
 See [the full guide](docs/WIRELESS-ADAPTER.md) for details and limitations.
 Its exact source commit and checksums are recorded under `docs`.
 
-This is an unpublished four-player candidate. Union Room gameplay is pending
-manual testing. The matching application source ZIP accompanies this local
-package; its commit and hash are recorded in `docs/BUILD-INFO.txt`.
+Version v0.2.0-beta.1 supports up to four local players. The user successfully
+tested four-player Pokémon Union Room play with this executable. Other games
+and activities still need compatibility testing. Its exact application source
+commit and archive hash are recorded in `docs/BUILD-INFO.txt`.
 
 Original mGBA controls, fast-forward and e-Reader behavior are retained.
-The previous two-player release and the unchanged dependency sources are at:
+The matching application source, unchanged dependency sources and fresh
+build/relink materials are separate downloads at:
 
-https://github.com/ATEMVEGETA/mgba/releases/tag/wireless-adapter-v0.1.0-beta.1
+https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1
 
 This compact executable statically includes GPL/LGPL libraries and is
 distributed as a combined work under GNU GPL version 3. Original MPL source
