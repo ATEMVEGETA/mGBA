@@ -1,5 +1,12 @@
 # Wireless Adapter protocol regression tests
 
+This expanded-room branch adds bounded discovery with 5/8/40 adapters,
+20 isolated pairs and five-system host/client groups. The shared fixture's
+adapter storage follows RFU capacity, not the unchanged cable `MAX_GBAS`.
+Mailbox saturation placeholders use a non-broadcast frame type, because
+advertisements now coalesce; receipt/backpressure assertions are retained.
+The deterministic/native-mutex suite currently has 166 cases.
+
 These tests compile the actual RFU, SIO, and timing sources from this checkout.
 They do not load a ROM, BIOS, save file, or emulator GUI. CPU IRQ delivery,
 unrelated Game Boy Player initialization, and general logging are replaced by
@@ -29,7 +36,7 @@ the actual waits occur outside the coordinator mutex.
 
 ## Scope
 
-The deterministic suite contains 160 cases, retaining the original 151 for command framing, serial
+The deterministic suite contains 166 cases, retaining the original 151 for command framing, serial
 clock ownership, packet snapshots, retry and timeout bounds, session isolation,
 prearmed readiness, completion-notice ownership, cooperative wakeups, lifecycle
 retirement, and independent timer progress during an unoffered client WAIT.

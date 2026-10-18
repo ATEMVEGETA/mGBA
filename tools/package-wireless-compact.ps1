@@ -81,7 +81,7 @@ foreach ($shader in Get-ChildItem -LiteralPath (Join-Path $root 'res/shaders') -
 }
 $docs = Join-Path $OutputDirectory 'docs'
 New-Item -ItemType Directory -Path $docs | Out-Null
-foreach ($name in @('WIRELESS-ADAPTER.md', 'WIRELESS-RELEASE-NOTES.md', 'WIRELESS-BUILD.md', 'WIRELESS-LICENSES.md')) {
+foreach ($name in @('WIRELESS-ADAPTER.md', 'WIRELESS-RELEASE-NOTES.md', 'WIRELESS-BUILD.md', 'WIRELESS-LICENSES.md', 'WIRELESS-LARGE-ROOM.md')) {
     Copy-Item -LiteralPath (Join-Path $root "doc/$name") -Destination $docs
 }
 Copy-Item -LiteralPath (Join-Path $root 'doc/licenses') -Destination $docs -Recurse

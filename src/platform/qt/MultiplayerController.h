@@ -10,6 +10,7 @@
 #include <QList>
 #include <QMutex>
 #include <QObject>
+#include <QSet>
 #include <QWaitCondition>
 
 #include <mgba/core/core.h>
@@ -41,17 +42,22 @@ public:
 
 	bool attachGame(CoreController*);
 	void detachGame(CoreController*);
+	// Read-only UI preflight. attachGame remains the final capacity check.
+	bool canAttachGame(mPlatform platform) const;
 
 	int attached();
 	int playerId(CoreController*) const;
 	int saveId(CoreController*) const;
+	// An active session retains its transport and capacity until all games close.
+	int windowLimit() const;
 	// Changes apply to the next session, after all current games close.
-	void setWirelessEnabled(bool enabled) { m_wirelessRequested.store(enabled, std::memory_order_relaxed); }
+	void setWirelessEnabled(bool enabled);
 	bool wirelessEnabled() const { return m_wirelessRequested.load(std::memory_order_relaxed); }
 
 signals:
 	void gameAttached();
 	void gameDetached();
+	void windowLimitChanged();
 
 private:
 	union Node {
@@ -74,6 +80,7 @@ private:
 		unsigned waitMask = 0;
 		int saveId = 1;
 		int preferredId = 0;
+		QPair<QString, QString> savePath;
 		bool attached = false;
 #ifdef M_CORE_GBA
 		bool wireless = false;
@@ -112,14 +119,18 @@ private:
 	std::unique_ptr<WirelessServiceThread> m_rfuServiceThread;
 #endif
 	std::atomic<bool> m_wirelessRequested{false};
+	// Menu/window checks run on the UI thread while cores attach/detach.
+	// Zero means there is no active transport, so use the requested next mode.
+	std::atomic<int> m_sessionWindowLimit{0};
+	std::atomic<int> m_registeredPlayers{0};
 
 	mPlatform m_platform = mPLATFORM_NONE;
 	int m_nextPid = 0;
-	int m_claimedIds = 0;
+	QSet<int> m_claimedIds;
 	QHash<int, Player> m_pids;
 	QList<int> m_players;
 	QMutex m_lock;
-	QHash<QPair<QString, QString>, int> m_claimedSaves;
+	QHash<QPair<QString, QString>, QSet<int>> m_claimedSaves;
 };
 
 }

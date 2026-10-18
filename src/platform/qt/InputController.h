@@ -23,6 +23,9 @@
 
 #include <mgba/core/input.h>
 #include <mgba/gba/interface.h>
+#ifdef M_CORE_GBA
+#include <mgba/internal/gba/sio/rfu.h>
+#endif
 
 #ifdef BUILD_QT_MULTIMEDIA
 #include "VideoDumper.h"
@@ -56,6 +59,11 @@ public:
 
 	static const uint32_t KEYBOARD = 0x51545F4B;
 	static const int POLL_INTERVAL_MS = 8;
+#ifdef M_CORE_GBA
+	static constexpr int MAX_INPUT_PLAYERS = GBA_RFU_MAX_ADAPTERS;
+#else
+	static constexpr int MAX_INPUT_PLAYERS = MAX_GBAS;
+#endif
 
 	InputController(QWidget* topLevel = nullptr, QObject* parent = nullptr);
 	~InputController();
@@ -187,7 +195,7 @@ private:
 #endif
 #endif
 
-	static int s_claimedPlayers;
+	static QSet<int> s_claimedPlayers;
 	mInputMap m_inputMap;
 	ConfigController* m_config = nullptr;
 	int m_playerId;

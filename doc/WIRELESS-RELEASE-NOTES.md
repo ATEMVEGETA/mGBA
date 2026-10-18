@@ -1,5 +1,14 @@
 # mGBA Wireless Adapter — beta release notes
 
+## Unpublished expanded-radio prototype
+
+Wireless environment capacity is separated from cable's four-console ABI.
+This candidate permits 40 virtual adapters, with bounded rotating discovery
+pages, globally distinct adapter identities and safe player/input/save claims
+above the old four-window/32-bit-mask boundaries. Hardware data groups remain
+one host plus four clients. Actual larger-room gameplay awaits user testing.
+See [the prototype guide](WIRELESS-LARGE-ROOM.md). No new release was published.
+
 ## v0.2.0-beta.1 — four local players
 
 This version extends the local Qt wireless session to four GBA windows. It

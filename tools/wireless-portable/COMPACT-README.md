@@ -1,5 +1,17 @@
 # mGBA with Wireless Adapter support
 
+**Unpublished expanded-room prototype:** this package permits up to 40 local
+wireless windows. Start testing with five, then eight; 40-player gameplay is
+not established. Use **File → New multiplayer window** within one process.
+Each game is independent but shares the virtual radio environment. Wireless
+data groups still have a host plus at most four clients; cable stays at four.
+
+Read [the prototype guide](docs/WIRELESS-LARGE-ROOM.md) first. The published
+four-player release and VEGETA's working custom build remain unchanged. The
+release links below refer to that earlier base and its dependency sources,
+not a public download of this prototype. Exact prototype source/hash details
+are in `docs/BUILD-INFO.txt` and its accompanying source archive.
+
 Unofficial Windows x64 test build based on official mGBA development source.
 The interface and runtime libraries are bundled into the executables; no
 separate DLLs or Qt plugin folders are required. Keep the included data,

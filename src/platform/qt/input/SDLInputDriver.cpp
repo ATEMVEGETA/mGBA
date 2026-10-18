@@ -15,6 +15,8 @@
 
 using namespace QGBA;
 
+static_assert(MAX_PLAYERS >= InputController::MAX_INPUT_PLAYERS, "SDL must cover every independent input window");
+
 int s_sdlInited = 0;
 QReadWriteLock s_eventsRwLock;
 mSDLEvents s_sdlEvents;

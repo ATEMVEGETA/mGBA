@@ -16,6 +16,9 @@ CXX_GUARD_START
 
 struct GBASIORFUDriver;
 
+/* Experimental virtual radio population, independent of the four-client
+ * hardware group and the four-console cable SIO ABI (MAX_GBAS). */
+#define GBA_RFU_MAX_ADAPTERS 40
 #define GBA_RFU_PACKET_DEPTH 1
 #define GBA_RFU_MESSAGE_DEPTH 64
 #define GBA_RFU_MAX_BYTES 92
@@ -85,6 +88,7 @@ struct GBASIORFUClient {
 struct GBASIORFUBroadcast {
 	bool valid;
 	uint8_t ttl;
+	uint8_t nextSlot;
 	uint16_t device;
 	uint32_t radioSession;
 	uint32_t data[6];
@@ -105,15 +109,15 @@ struct GBASIORFUPrearmed {
 };
 
 struct GBASIORFUCoordinator {
-	struct GBASIORFUDriver* players[MAX_GBAS];
+	struct GBASIORFUDriver* players[GBA_RFU_MAX_ADAPTERS];
 	int nAttached;
 	uint32_t nextRadioSession;
 	uint64_t nextReadinessGeneration;
-	struct GBASIORFUPrearmed prearmed[MAX_GBAS];
+	struct GBASIORFUPrearmed prearmed[GBA_RFU_MAX_ADAPTERS];
 	/* External monotonic service clock; zero leaves cooperative yielding off. */
 	uint64_t cooperativeNowUs;
 	/* Owner-published registration identity, not peer adapter state reads. */
-	uint32_t cooperativeSessions[MAX_GBAS];
+	uint32_t cooperativeSessions[GBA_RFU_MAX_ADAPTERS];
 	Mutex mutex;
 };
 
@@ -151,6 +155,7 @@ struct GBASIORFUDriver {
 	uint8_t asyncIndex;
 	uint8_t timeoutFrames;
 	uint8_t retryCount;
+	uint8_t maxClients;
 	uint32_t waitCycles;
 	uint32_t retryCycles;
 	uint32_t connectCycles;
@@ -163,7 +168,13 @@ struct GBASIORFUDriver {
 	uint8_t broadcastFrames;
 	bool hasBroadcast;
 	uint32_t broadcast[6];
-	struct GBASIORFUBroadcast peerBroadcast[MAX_GBAS];
+	struct GBASIORFUBroadcast peerBroadcast[GBA_RFU_MAX_ADAPTERS];
+	/* Discovery exposes at most four hosts. Polls append newly heard peers;
+	 * later polls/end retain their order, and the next scan rotates the page. */
+	uint8_t discoveryPeers[4];
+	uint8_t discoveryCount;
+	uint8_t discoveryCursor;
+	uint8_t discoveryNext;
 	struct GBASIORFUClient clients[4];
 	struct GBASIORFUFifo rx;
 	struct GBASIORFUPacket tx;

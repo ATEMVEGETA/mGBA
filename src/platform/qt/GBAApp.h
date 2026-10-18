@@ -58,6 +58,7 @@ public:
 	QFont monospaceFont() { return m_monospace; }
 
 	QList<Window*> windows() { return m_windows; }
+	int windowLimit() const { return m_multiplayer.windowLimit(); }
 
 	QString getOpenFileName(QWidget* owner, const QString& title, const QString& filter = {}, const QString& path = {});
 	QStringList getOpenFileNames(QWidget* owner, const QString& title, const QString& filter = {}, const QString& path = {});
@@ -118,6 +119,7 @@ private:
 
 	void pauseAll(QList<Window*>* paused);
 	void continueAll(const QList<Window*>& paused);
+	void updateMultiplayerStatus();
 
 	ConfigController* m_configController;
 	QList<Window*> m_windows;

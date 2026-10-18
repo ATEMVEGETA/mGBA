@@ -2227,6 +2227,19 @@ void Window::setController(CoreController* controller) {
 		return;
 	}
 
+	MultiplayerController* multiplayer = controller->multiplayerController();
+	if (multiplayer && !multiplayer->canAttachGame(controller->platform())) {
+		// Empty windows can outlive a larger Wireless session. Refuse loading
+		// into a full/smaller session before a thread or save-writing game runs.
+		QMessageBox* fail = new QMessageBox(QMessageBox::Warning, tr("Couldn't Start"),
+		    tr("This multiplayer session is full or uses a different system. Close a game, or close all games before changing the link type."),
+		    QMessageBox::Ok, this, Qt::Sheet);
+		fail->setAttribute(Qt::WA_DeleteOnClose);
+		fail->show();
+		delete controller;
+		return;
+	}
+
 	QString baseDirectory = controller->baseDirectory();
 	QString path = controller->path();
 	if (!path.isEmpty()) {

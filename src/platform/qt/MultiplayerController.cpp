@@ -56,7 +56,12 @@ int MultiplayerController::Player::id() const {
 	switch (controller->platform()) {
 #ifdef M_CORE_GBA
 	case mPLATFORM_GBA: {
-		GBASIODriver* driver = wireless ? &node.rfu->d : &node.gba->d;
+		// RFU hardware reports a cable-compatible device ID in some serial
+		// modes; its radio slot remains the independent frontend identity.
+		if (wireless) {
+			return node.rfu->playerId >= 0 ? node.rfu->playerId : preferredId;
+		}
+		GBASIODriver* driver = &node.gba->d;
 		int id = driver->deviceId(driver);
 		if (id >= 0) {
 			return id;
@@ -248,6 +253,45 @@ MultiplayerController::~MultiplayerController() {
 }
 
 bool MultiplayerController::attachGame(CoreController* controller) {
+	mCoreThread* thread = controller->thread();
+	if (!thread || (m_platform != mPLATFORM_NONE && controller->platform() != m_platform)) {
+		return false;
+	}
+	for (const Player& p : m_pids) {
+		if (p.controller == controller) {
+			return false;
+		}
+	}
+	int capacity;
+	switch (controller->platform()) {
+#ifdef M_CORE_GBA
+	case mPLATFORM_GBA:
+		capacity = (m_platform == mPLATFORM_NONE ? wirelessEnabled() : m_gbaWireless)
+			? GBA_RFU_MAX_ADAPTERS : MAX_GBAS;
+		break;
+#endif
+#ifdef M_CORE_GB
+	case mPLATFORM_GB:
+		capacity = 2;
+		break;
+#endif
+	default:
+		return false;
+	}
+	// Reject before claiming player/save IDs or allocating transport hooks.
+	// Cable's first player is deliberately not attached until a peer joins,
+	// so use the registered frontend players instead of coordinator counts.
+	if (m_pids.size() >= capacity) {
+		return false;
+	}
+	int preferredId = 0;
+	while (preferredId < capacity && m_claimedIds.contains(preferredId)) {
+		++preferredId;
+	}
+	if (preferredId == capacity) {
+		return false;
+	}
+
 	QList<CoreController::Interrupter> interrupters;
 	interrupters.append(controller);
 	for (Player& p : m_pids.values()) {
@@ -259,7 +303,7 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 		switch (controller->platform()) {
 #ifdef M_CORE_GBA
 		case mPLATFORM_GBA:
-			m_gbaWireless = wirelessEnabled();
+			m_gbaWireless = capacity == GBA_RFU_MAX_ADAPTERS;
 			if (m_gbaWireless) {
 				QMutexLocker serviceLock(&m_rfuServiceMutex);
 				GBASIORFUCoordinatorInit(&m_gbaRfuCoordinator);
@@ -281,32 +325,12 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 			return false;
 		}
 		m_platform = controller->platform();
-	} else if (controller->platform() != m_platform) {
-		return false;
+		m_sessionWindowLimit.store(capacity, std::memory_order_release);
 	}
-
-	mCoreThread* thread = controller->thread();
-	if (!thread) {
-		return false;
-	}
-
-#ifdef M_CORE_GBA
-	// The Qt player, input and save slots support up to MAX_GBAS adapters.
-	// Reject excess games before claiming an ID or allocating thread hooks.
-	if (m_platform == mPLATFORM_GBA && m_gbaWireless && attached() >= MAX_GBAS) {
-		return false;
-	}
-#endif
 
 	Player player{controller};
-	for (int i = 0; i < MAX_GBAS; ++i) {
-		if (m_claimedIds & (1 << i)) {
-			continue;
-		}
-		player.preferredId = i;
-		m_claimedIds |= 1 << i;
-		break;
-	}
+	player.preferredId = preferredId;
+	m_claimedIds.insert(preferredId);
 	switch (controller->platform()) {
 #ifdef M_CORE_GBA
 	case mPLATFORM_GBA: {
@@ -321,10 +345,6 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 			player.node.rfu = node;
 			player.wireless = true;
 			break;
-		}
-
-		if (attached() >= MAX_GBAS) {
-			return false;
 		}
 
 		GBASIOLockstepDriver* node = new GBASIOLockstepDriver;
@@ -355,10 +375,6 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 #endif
 #ifdef M_CORE_GB
 	case mPLATFORM_GB: {
-		if (attached() >= 2) {
-			return false;
-		}
-
 		GB* gb = static_cast<GB*>(thread->core->board);
 
 		GBSIOLockstepNode* node = new GBSIOLockstepNode;
@@ -375,31 +391,21 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 		return false;
 	}
 
-	QPair<QString, QString> path(controller->path(), controller->baseDirectory());
-	int claimed = m_claimedSaves[path];
+	player.savePath = qMakePair(controller->path(), controller->baseDirectory());
+	QSet<int>& claimed = m_claimedSaves[player.savePath];
 
 	int saveId = 0;
 	mCoreConfigGetIntValue(&controller->thread()->core->config, "savePlayerId", &saveId);
 
-	if (claimed) {
-		player.saveId = 0;
-		for (int i = 0; i < MAX_GBAS; ++i) {
-			if (claimed & (1 << i)) {
-				continue;
-			}
-			player.saveId = i + 1;
-			break;
-		}
-		if (!player.saveId) {
-			LOG(QT, ERROR) << tr("Couldn't find available save ID");
-			player.saveId = 1;
-		}
-	} else if (saveId) {
+	if (saveId > 0 && !claimed.contains(saveId)) {
 		player.saveId = saveId;
 	} else {
 		player.saveId = 1;
+		while (claimed.contains(player.saveId)) {
+			++player.saveId;
+		}
 	}
-	m_claimedSaves[path] |= 1 << (player.saveId - 1);
+	claimed.insert(player.saveId);
 
 	m_pids.insert(m_nextPid, player);
 	++m_nextPid;
@@ -434,7 +440,9 @@ bool MultiplayerController::attachGame(CoreController* controller) {
 		}
 	}
 
+	m_registeredPlayers.store(m_pids.size(), std::memory_order_release);
 	emit gameAttached();
+	emit windowLimitChanged();
 	return true;
 }
 
@@ -511,22 +519,23 @@ void MultiplayerController::detachGame(CoreController* controller) {
 		break;
 	}
 
-	// TODO: This might change if we replace the ROM--make sure to handle this properly
-	QPair<QString, QString> path(controller->path(), controller->baseDirectory());
 	Player& p = m_pids.find(pid).value();
 	if (!p.saveId) {
 		LOG(QT, WARN) << tr("Clearing invalid save ID");
 	} else {
-		m_claimedSaves[path] &= ~(1 << (p.saveId - 1));
-		if (!m_claimedSaves[path]) {
-			m_claimedSaves.remove(path);
+		auto saves = m_claimedSaves.find(p.savePath);
+		if (saves != m_claimedSaves.end()) {
+			saves->remove(p.saveId);
+			if (saves->isEmpty()) {
+				m_claimedSaves.erase(saves);
+			}
 		}
 	}
 
 	if (p.preferredId < 0) {
 		LOG(QT, WARN) << tr("Clearing invalid preferred ID");
 	} else {
-		m_claimedIds &= ~(1 << p.preferredId);
+		m_claimedIds.remove(p.preferredId);
 	}
 
 	m_pids.remove(pid);
@@ -542,10 +551,51 @@ void MultiplayerController::detachGame(CoreController* controller) {
 			}
 		}
 		m_platform = mPLATFORM_NONE;
+		m_players.clear();
+		m_sessionWindowLimit.store(0, std::memory_order_release);
 	} else {
 		fixOrder();
 	}
+	m_registeredPlayers.store(m_pids.size(), std::memory_order_release);
 	emit gameDetached();
+	emit windowLimitChanged();
+}
+
+void MultiplayerController::setWirelessEnabled(bool enabled) {
+	if (m_wirelessRequested.exchange(enabled, std::memory_order_relaxed) != enabled) {
+		emit windowLimitChanged();
+	}
+}
+
+int MultiplayerController::windowLimit() const {
+	const int active = m_sessionWindowLimit.load(std::memory_order_acquire);
+	if (active) {
+		return active;
+	}
+#ifdef M_CORE_GBA
+	if (wirelessEnabled()) {
+		return GBA_RFU_MAX_ADAPTERS;
+	}
+#endif
+	return MAX_GBAS;
+}
+
+bool MultiplayerController::canAttachGame(mPlatform platform) const {
+	const int active = m_sessionWindowLimit.load(std::memory_order_acquire);
+	const int registered = m_registeredPlayers.load(std::memory_order_acquire);
+	switch (platform) {
+#ifdef M_CORE_GBA
+	case mPLATFORM_GBA:
+		// The two-player capacity uniquely identifies an active GB session.
+		return active != 2 && registered < (active ? active : windowLimit());
+#endif
+#ifdef M_CORE_GB
+	case mPLATFORM_GB:
+		return (!active || active == 2) && registered < 2;
+#endif
+	default:
+		return false;
+	}
 }
 
 int MultiplayerController::playerId(CoreController* controller) const {
@@ -596,7 +646,7 @@ int MultiplayerController::attached() {
 }
 
 MultiplayerController::Player* MultiplayerController::player(int id) {
-	if (id >= m_players.size()) {
+	if (id < 0 || id >= m_players.size()) {
 		return nullptr;
 	}
 	int pid = m_players[id];
@@ -608,7 +658,7 @@ MultiplayerController::Player* MultiplayerController::player(int id) {
 }
 
 const MultiplayerController::Player* MultiplayerController::player(int id) const {
-	if (id >= m_players.size()) {
+	if (id < 0 || id >= m_players.size()) {
 		return nullptr;
 	}
 	int pid = m_players[id];

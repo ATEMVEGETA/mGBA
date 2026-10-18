@@ -26,10 +26,14 @@ static void joinWirelessHost(unsigned host, unsigned client) {
 	uint32_t response[32];
 	EQ(command(host, 0x13, NULL, 0, response), 1);
 	const uint32_t device = response[0] & 0xFFFF;
-	EQ(command(client, 0x1C, NULL, 0, NULL), 0);
-	unsigned count = command(client, 0x1D, NULL, 0, response);
 	bool found = false;
-	for (unsigned i = 0; i < count; i += 7) if ((response[i] & 0xFFFF) == device) found = true;
+	for (unsigned sweep = 0; sweep < GBA_RFU_MAX_ADAPTERS && !found; ++sweep) {
+		EQ(command(client, 0x1C, NULL, 0, NULL), 0);
+		unsigned count = command(client, 0x1D, NULL, 0, response);
+		CHECK(count <= 28 && count % 7 == 0);
+		for (unsigned i = 0; i < count; i += 7) if ((response[i] & 0xFFFF) == device) found = true;
+		command(client, 0x1E, NULL, 0, NULL);
+	}
 	CHECK(found);
 	EQ(command(client, 0x1F, &device, 1, NULL), 0);
 	advance(FRAME_CYCLES * 2);
@@ -62,8 +66,8 @@ static void testFourWayDiscovery(void) {
 }
 
 static void finishWirelessWaits(const unsigned* ids, unsigned count) {
-	unsigned previous[4];
-	CHECK(count <= 4);
+	unsigned previous[GBA_RFU_MAX_ADAPTERS];
+	CHECK(count <= GBA_RFU_MAX_ADAPTERS);
 	for (unsigned i = 0; i < count; ++i) previous[i] = armAsyncWithoutAdvancing(ids[i]);
 	for (unsigned i = 0; i < count; ++i) awaitAsyncHeader(ids[i], previous[i], 0x99660028);
 	for (unsigned i = 0; i < count; ++i) EQ(asynchronousReceive(ids[i], CLOCK_FAST), 0x80000000);

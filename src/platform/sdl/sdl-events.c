@@ -117,6 +117,12 @@ bool mSDLInitEvents(struct mSDLEvents* context) {
 	}
 #endif
 
+	size_t i;
+	for (i = 0; i < MAX_PLAYERS; ++i) {
+		context->players[i] = NULL;
+		context->preferredJoysticks[i].type = NULL;
+		context->preferredJoysticks[i].serial = NULL;
+	}
 	SDL_JoystickListInit(&context->joysticks, 0);
 #if SDL_VERSION_ATLEAST(3, 0, 0)
 	SDL_SetJoystickEventsEnabled(true);
@@ -141,12 +147,6 @@ bool mSDLInitEvents(struct mSDLEvents* context) {
 		}
 	}
 #endif
-
-	size_t i;
-	for (i = 0; i < MAX_PLAYERS; ++i) {
-		context->preferredJoysticks[i].type = NULL;
-		context->preferredJoysticks[i].serial = NULL;
-	}
 
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
@@ -234,7 +234,8 @@ bool mSDLAttachPlayer(struct mSDLEvents* events, struct mSDLPlayer* player, int 
 				break;
 			}
 		}
-	} else if (playerId >= MAX_PLAYERS || events->players[playerId]) {
+	}
+	if (playerId < 0 || playerId >= MAX_PLAYERS || events->players[playerId]) {
 		return false;
 	}
 
@@ -335,7 +336,7 @@ bool mSDLAttachPlayer(struct mSDLEvents* events, struct mSDLPlayer* player, int 
 }
 
 void mSDLDetachPlayer(struct mSDLEvents* events, struct mSDLPlayer* player) {
-	if (player != events->players[player->playerId]) {
+	if (player->playerId >= MAX_PLAYERS || player != events->players[player->playerId]) {
 		return;
 	}
 	events->players[player->playerId] = NULL;
@@ -444,17 +445,17 @@ void mSDLPlayerSaveConfig(const struct mSDLPlayer* context, struct Configuration
 }
 
 void mSDLPlayerChangeJoystick(struct mSDLEvents* events, struct mSDLPlayer* player, size_t index) {
-	if (player->playerId >= MAX_PLAYERS || index >= SDL_JoystickListSize(&events->joysticks)) {
+	if (player->playerId >= MAX_PLAYERS || player != events->players[player->playerId] || index >= SDL_JoystickListSize(&events->joysticks)) {
 		return;
 	}
 	player->joystick = SDL_JoystickListGetPointer(&events->joysticks, index);
 }
 
 void mSDLPlayerChangeId(struct mSDLEvents* events, struct mSDLPlayer* player, int id) {
-	if (id >= MAX_PLAYERS) {
+	if (id < 0 || id >= MAX_PLAYERS || (events->players[id] && events->players[id] != player)) {
 		return;
 	}
-	if (player != events->players[player->playerId]) {
+	if (player->playerId >= MAX_PLAYERS || player != events->players[player->playerId]) {
 		return;
 	}
 	events->players[player->playerId] = NULL;

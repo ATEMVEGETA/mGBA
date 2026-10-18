@@ -78,8 +78,11 @@ CoreController::CoreController(mCore* core, QObject* parent)
 		controller->updateFastForward();
 
 		if (controller->m_multiplayer) {
-			controller->m_multiplayer->attachGame(controller);
-			controller->updatePlayerSave();
+			if (controller->m_multiplayer->attachGame(controller)) {
+				controller->updatePlayerSave();
+			} else {
+				LOG(QT, ERROR) << tr("Could not attach game to the multiplayer session");
+			}
 		}
 
 		if (controller->m_override) {
@@ -490,6 +493,10 @@ void CoreController::start() {
 }
 
 void CoreController::stop() {
+	// A game rejected by the GUI preflight never owns a core thread.
+	if (!m_threadContext.impl) {
+		return;
+	}
 	setSync(false);
 #ifdef ENABLE_DEBUGGERS
 	if (m_malController) {
@@ -1274,10 +1281,14 @@ void CoreController::finishFrame() {
 }
 
 void CoreController::updatePlayerSave() {
-	if (m_saveBlocked) {
+	if (m_saveBlocked || !m_multiplayer) {
 		return;
 	}
 	int savePlayerId = m_multiplayer->saveId(this);
+	if (savePlayerId < 1) {
+		LOG(QT, ERROR) << tr("Refusing to select a multiplayer save without a valid save ID");
+		return;
+	}
 
 	QString saveSuffix;
 	if (savePlayerId < 2) {

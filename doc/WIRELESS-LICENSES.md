@@ -26,6 +26,12 @@ or modification.
 
 ## Matching release materials
 
+This checkout is an unpublished expanded-radio prototype. Its accompanying
+source archive and BUILD-INFO identify its own exact commit, not the older
+public executable commit below. Dependencies are unchanged and their complete
+source remains in the v0.2.0-beta.1 release. Prototype build objects and history
+are preserved locally; any future public binary needs matching relink assets.
+
 The [v0.2.0-beta.1 four-player release](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1)
 provides the exact application source at
 `4884301060924ba4083de0a3e84cc9e461b0133c`, plus its own build/relink archive.

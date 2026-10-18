@@ -110,8 +110,13 @@ void ActionMapper::rebuildMenu(const QString& menu, QMenu* qmenu, QWidget* conte
 			}
 		});
 		QObject::connect(action.get(), &Action::enabled, qaction, &QAction::setEnabled);
-		QObject::connect(action.get(), &Action::activated, [qaction, weakAction = std::move(weakAction)](bool active) {
+		// Shared configuration actions can outlive a multiplayer window.
+		// Disconnect this captured QAction when its menu is destroyed.
+		QObject::connect(action.get(), &Action::activated, qaction, [qaction, weakAction = std::move(weakAction)](bool active) {
 			std::shared_ptr<Action> action(weakAction.lock());
+			if (!action) {
+				return;
+			}
 			if (qaction->isCheckable()) {
 				qaction->setChecked(active);
 			} else if (active) {

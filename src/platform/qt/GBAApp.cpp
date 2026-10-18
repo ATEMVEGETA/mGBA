@@ -71,6 +71,7 @@ GBAApp::GBAApp(int& argc, char* argv[], ConfigController* config)
 
 	m_manager.setConfig(m_configController->config());
 	m_manager.setMultiplayerController(&m_multiplayer);
+	connect(&m_multiplayer, &MultiplayerController::windowLimitChanged, this, &GBAApp::updateMultiplayerStatus);
 
 #ifdef M_CORE_GBA
 	ConfigOption* gbaLinkMode = m_configController->addOption("gbaLinkMode");
@@ -142,25 +143,28 @@ bool GBAApp::event(QEvent* event) {
 }
 
 Window* GBAApp::newWindow() {
-	if (m_windows.count() >= MAX_GBAS) {
+	if (m_windows.count() >= windowLimit()) {
 		return nullptr;
 	}
 	Window* w = new Window(&m_manager, m_configController, m_windows.count());
 	connect(w, &Window::destroyed, [this, w]() {
 		m_windows.removeAll(w);
-		for (Window* w : m_windows) {
-			w->updateMultiplayerStatus(m_windows.count() < MAX_GBAS);
-		}
+		updateMultiplayerStatus();
 	});
 	m_windows.append(w);
 	w->setAttribute(Qt::WA_DeleteOnClose);
 	w->loadConfig();
 	w->show();
 	w->multiplayerChanged();
-	for (Window* w : m_windows) {
-		w->updateMultiplayerStatus(m_windows.count() < MAX_GBAS);
-	}
+	updateMultiplayerStatus();
 	return w;
+}
+
+void GBAApp::updateMultiplayerStatus() {
+	const bool available = m_windows.count() < windowLimit();
+	for (Window* window : m_windows) {
+		window->updateMultiplayerStatus(available);
+	}
 }
 
 GBAApp* GBAApp::app() {

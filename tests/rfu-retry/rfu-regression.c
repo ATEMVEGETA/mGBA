@@ -31,7 +31,7 @@ struct TestGBA {
 	uint32_t irqTime;
 };
 
-static struct TestGBA* machines[MAX_GBAS];
+static struct TestGBA* machines[GBA_RFU_MAX_ADAPTERS];
 static unsigned machineCount;
 static struct GBASIORFUCoordinator coordinator;
 static unsigned assertions;
@@ -91,6 +91,7 @@ const char* const GBAIORegisterNames[512] = {0};
 static void beginConfigured(const char* name, unsigned count, bool prearmed) {
 	currentTest = name;
 	++testCases;
+	CHECK(count <= COUNT_OF(machines));
 	machineCount = count;
 	GBASIORFUCoordinatorInit(&coordinator);
 	for (unsigned i = 0; i < count; ++i) {
@@ -115,6 +116,13 @@ static void begin(const char* name, unsigned count) {
 
 static void beginPrearmed(const char* name) {
 	beginConfigured(name, 2, true);
+}
+
+static void fillMailboxPlaceholders(struct GBASIORFUDriver* rfu) {
+	/* Saturate with non-replaceable inert frames. Zero-initialized type 0
+	 * denotes a broadcast, which the large environment can coalesce/evict. */
+	memset(rfu->incoming, 0, sizeof(rfu->incoming));
+	for (unsigned i = 0; i < GBA_RFU_MESSAGE_DEPTH; ++i) rfu->incoming[i].type = UINT8_MAX;
 }
 
 static void end(void) {
@@ -1925,7 +1933,7 @@ static void testSynchronizedFullMailboxRecovery(void) {
 	mTimingDeschedule(&machines[1]->gba.timing, &client->pollEvent);
 	mTimingDeschedule(&machines[1]->gba.timing, &client->maintenanceEvent);
 	MutexLock(&coordinator.mutex);
-	memset(client->incoming, 0, sizeof(client->incoming));
+	fillMailboxPlaceholders(client);
 	client->incomingHead = 0;
 	client->incomingCount = GBA_RFU_MESSAGE_DEPTH;
 	MutexUnlock(&coordinator.mutex);
@@ -2864,7 +2872,7 @@ static void testPrearmedFullMailboxRecovery(void) {
 		const uint64_t generation = prearmedSnapshot(1).generation;
 		struct GBASIORFUDriver* receiver = &machines[1]->rfu;
 		MutexLock(&coordinator.mutex);
-		memset(receiver->incoming, 0, sizeof(receiver->incoming));
+		fillMailboxPlaceholders(receiver);
 		receiver->incomingHead = 0;
 		receiver->incomingCount = GBA_RFU_MESSAGE_DEPTH - available;
 		MutexUnlock(&coordinator.mutex);
@@ -2992,7 +3000,7 @@ static void testPrearmedFullReleaseCancellation(void) {
 	EQ(command(1, 0x25, client, 2, NULL), 0);
 	struct GBASIORFUDriver* receiver = &machines[1]->rfu;
 	MutexLock(&coordinator.mutex);
-	memset(receiver->incoming, 0, sizeof(receiver->incoming));
+	fillMailboxPlaceholders(receiver);
 	receiver->incomingHead = 0;
 	receiver->incomingCount = GBA_RFU_MESSAGE_DEPTH - 1;
 	MutexUnlock(&coordinator.mutex);
@@ -3098,7 +3106,7 @@ static void testPrearmedRetiredClaimWithFullHostMailbox(void) {
 	CHECK(machines[0]->rfu.radioDue - effectiveRadioClock(0) > FRAME_CYCLES);
 	EQ(machines[0]->rfu.txAckMask, 0);
 	MutexLock(&coordinator.mutex);
-	memset(machines[0]->rfu.incoming, 0, sizeof(machines[0]->rfu.incoming));
+	fillMailboxPlaceholders(&machines[0]->rfu);
 	machines[0]->rfu.incomingHead = 0;
 	machines[0]->rfu.incomingCount = GBA_RFU_MESSAGE_DEPTH;
 	MutexUnlock(&coordinator.mutex);
@@ -3572,6 +3580,7 @@ static void testFreshClaimGuardsOldUnreadStandaloneWait(void) {
 
 #include "rfu-cooperative-tests.h"
 #include "rfu-multiplayer-tests.h"
+#include "rfu-large-room-tests.h"
 
 int main(void) {
 	setvbuf(stdout, NULL, _IONBF, 0);
@@ -3657,6 +3666,9 @@ int main(void) {
 	testFourWayIndependentPairs();
 	testMultiClientExchange();
 	testMultiClientMembership();
+	testLargeRoomDiscovery();
+	testFiveMemberGroup();
+	testLargeRoomIndependentPairs();
 	printf("All %u RFU regression cases passed (%u assertions).\n", testCases, assertions);
 	return 0;
 }

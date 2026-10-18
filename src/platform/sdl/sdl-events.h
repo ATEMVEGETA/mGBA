@@ -21,7 +21,13 @@ mLOG_DECLARE_CATEGORY(SDL_EVENTS);
 #define SDL_BINDING_BUTTON 0x53444C42U
 #define SDL_BINDING_CONTROLLER 0x53444C43U
 
+// Input slots belong to independent windows, not to the four-device cable ABI.
+#ifdef M_CORE_GBA
+#include <mgba/internal/gba/sio/rfu.h>
+#define MAX_PLAYERS GBA_RFU_MAX_ADAPTERS
+#else
 #define MAX_PLAYERS 4
+#endif
 
 struct Configuration;
 

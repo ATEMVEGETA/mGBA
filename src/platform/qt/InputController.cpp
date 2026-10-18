@@ -31,7 +31,8 @@
 
 using namespace QGBA;
 
-int InputController::s_claimedPlayers = 0;
+constexpr int InputController::MAX_INPUT_PLAYERS;
+QSet<int> InputController::s_claimedPlayers;
 
 InputController::InputController(QWidget* topLevel, QObject* parent)
 	: QObject(parent)
@@ -296,7 +297,7 @@ void InputController::setPreferredGamepad(uint32_t type, int index) {
 	}
 
 	auto pads = driver->connectedGamepads();
-	if (index >= pads.count()) {
+	if (index < 0 || index >= pads.count()) {
 		return;
 	}
 
@@ -583,17 +584,17 @@ bool InputController::hasPendingEvent(int key) const {
 }
 
 int InputController::claimPlayer() {
-	for (int i = 0; i < MAX_GBAS; ++i) {
-		if (!(s_claimedPlayers & (1 << i))) {
-			s_claimedPlayers |= 1 << i;
+	for (int i = 0; i < MAX_INPUT_PLAYERS; ++i) {
+		if (!s_claimedPlayers.contains(i)) {
+			s_claimedPlayers.insert(i);
 			return i;
 		}
 	}
-	qFatal("Can't claim 5th player. Please report this bug.");
+	qFatal("Can't claim input player beyond the window limit. Please report this bug.");
 }
 
 void InputController::freePlayer(int player) {
-	s_claimedPlayers &= ~(1 << player);
+	s_claimedPlayers.remove(player);
 }
 
 void InputController::stealFocus(QWidget* focus) {

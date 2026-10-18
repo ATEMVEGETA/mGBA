@@ -150,12 +150,14 @@ static void testCooperativeSpuriousWakeAndFullMailbox(void) {
 	GBASIORFUCoordinatorService(&coordinator, 1010000);
 	reachCooperativeSleep(0);
 	CHECK(machines[0]->rfu.cooperativeDeadlineUs == deadline);
-	/* Fill the real mailbox through real peer commands, not by fabricating RF
-	 * acknowledgements. Full-mailbox posts cannot create a stale sleeping flag. */
+	/* Repeated real peer commands coalesce advertisements rather than fill
+	 * the mailbox. Such posts still cannot create a stale sleeping flag. */
 	for (unsigned i = 0; i < GBA_RFU_MESSAGE_DEPTH + 1; ++i) {
 		EQ(commandOne(2, 0x16, broadcast, 6, NULL), 0);
 	}
-	EQ(machines[0]->rfu.incomingCount, GBA_RFU_MESSAGE_DEPTH);
+	/* Repeated advertisements from one peer coalesce to its newest snapshot;
+	 * they must still wake durably without extending the exchange budget. */
+	EQ(machines[0]->rfu.incomingCount, 1);
 	CHECK(!cooperativeUsers[0].asleep);
 	advanceOne(0, 128);
 	EQ(machines[0]->rfu.incomingCount, 0);

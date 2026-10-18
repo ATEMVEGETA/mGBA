@@ -1,6 +1,11 @@
 mGBA
 ====
 
+> Local development branch: **expanded Wireless Adapter environment** with
+> up to 40 virtual adapters, independent of the four-system Link Cable limit.
+> This is an unpublished test candidate, not a replacement for the working
+> v0.2.0-beta.1 release below. See [the large-room test guide](doc/WIRELESS-LARGE-ROOM.md).
+
 > [!IMPORTANT]
 > This is the **unofficial mGBA Wireless Adapter fork**. It adds local wireless
 > communication for up to four Game Boy Advance games on one computer, with a native

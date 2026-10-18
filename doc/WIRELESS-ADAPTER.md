@@ -1,5 +1,10 @@
 # Wireless Adapter for mGBA
 
+This checkout additionally contains an unpublished expanded-radio prototype.
+Use [the large-room test guide](WIRELESS-LARGE-ROOM.md) for its 5–40-window
+workflow and coverage limits. The guide below describes the published
+four-player v0.2.0-beta.1 base, which remains unchanged.
+
 An unofficial, experimental addition to the mGBA Qt frontend for local
 Wireless Adapter communication between up to four emulated Game Boy Advance systems
 on one computer. This is not an upstream mGBA release.

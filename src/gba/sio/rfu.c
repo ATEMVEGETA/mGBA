@@ -192,7 +192,7 @@ static void _cooperativeRetireLocked(struct GBASIORFUDriver* rfu) {
 
 static void _cooperativeRetirePeersLocked(struct GBASIORFUDriver* rfu) {
 	struct GBASIORFUCoordinator* coordinator = rfu->coordinator;
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		struct GBASIORFUDriver* target = coordinator->players[peer];
 		if (!target || target == rfu) continue;
 		/* An old peer-dependent WAIT cannot re-park after a lifecycle
@@ -229,8 +229,10 @@ static void _schedulePoll(struct GBASIORFUDriver* rfu) {
 
 static uint16_t _newDevice(struct GBASIORFUDriver* rfu) {
 	++rfu->generation;
-	return 0x6100 | ((rfu->playerId < 0 ? 0 : rfu->playerId) << 6) |
-		((rfu->generation % 63) + 1);
+	/* Six node bits and eight incarnation bits, with separate host/client
+	 * namespaces. The former fixed prefix overlapped node bits at node 4. */
+	return 0x4000 | ((rfu->playerId < 0 ? 0 : rfu->playerId) << 8) |
+		(rfu->generation & 0xFF);
 }
 
 static bool _replacePacket(struct GBASIORFUFifo* fifo, const uint8_t* data, uint8_t bytes) {
@@ -258,7 +260,7 @@ static bool _popPacket(struct GBASIORFUFifo* fifo, struct GBASIORFUPacket* packe
 
 static bool _post(struct GBASIORFUDriver* rfu, unsigned peer, struct GBASIORFUMessage* message) {
 	struct GBASIORFUCoordinator* coordinator = rfu->coordinator;
-	if (!coordinator || peer >= MAX_GBAS) {
+	if (!coordinator || peer >= GBA_RFU_MAX_ADAPTERS || rfu->playerId < 0) {
 		return false;
 	}
 	message->source = rfu->playerId;
@@ -267,12 +269,42 @@ static bool _post(struct GBASIORFUDriver* rfu, unsigned peer, struct GBASIORFUMe
 	bool posted = false;
 	MutexLock(&coordinator->mutex);
 	struct GBASIORFUDriver* target = coordinator->players[peer];
-	if (target && target != rfu && target->incomingCount < GBA_RFU_MESSAGE_DEPTH) {
-		unsigned tail = (target->incomingHead + target->incomingCount) % GBA_RFU_MESSAGE_DEPTH;
-		target->incoming[tail] = *message;
-		++target->incomingCount;
-		_cooperativeWakeLocked(target);
-		posted = true;
+	if (target && target != rfu) {
+		/* Advertisements are replaceable snapshots, not a packet history.
+		 * A slow scanner needs at most one per environment peer, leaving
+		 * room for radio/control traffic even with forty broadcasters. */
+		if (message->type == RFU_BROADCAST) {
+			for (unsigned i = 0; i < target->incomingCount; ++i) {
+				unsigned index = (target->incomingHead + i) % GBA_RFU_MESSAGE_DEPTH;
+				if (target->incoming[index].type == RFU_BROADCAST &&
+				    target->incoming[index].source == message->source) {
+					target->incoming[index] = *message;
+					posted = true;
+					break;
+				}
+			}
+		} else if (target->incomingCount == GBA_RFU_MESSAGE_DEPTH) {
+			/* A full mailbox must not let replaceable discovery data crowd
+			 * out a disconnect or an exchange. Preserve remaining ordering. */
+			for (unsigned i = 0; i < target->incomingCount; ++i) {
+				unsigned index = (target->incomingHead + i) % GBA_RFU_MESSAGE_DEPTH;
+				if (target->incoming[index].type != RFU_BROADCAST) continue;
+				for (unsigned j = i + 1; j < target->incomingCount; ++j) {
+					unsigned next = (target->incomingHead + j) % GBA_RFU_MESSAGE_DEPTH;
+					target->incoming[index] = target->incoming[next];
+					index = next;
+				}
+				--target->incomingCount;
+				break;
+			}
+		}
+		if (!posted && target->incomingCount < GBA_RFU_MESSAGE_DEPTH) {
+			unsigned tail = (target->incomingHead + target->incomingCount) % GBA_RFU_MESSAGE_DEPTH;
+			target->incoming[tail] = *message;
+			++target->incomingCount;
+			posted = true;
+		}
+		if (posted) _cooperativeWakeLocked(target);
 	}
 	MutexUnlock(&coordinator->mutex);
 	if (!posted && message->type != RFU_BROADCAST && message->type != RFU_KEEPALIVE) {
@@ -304,7 +336,7 @@ static void _cooperativeTryPark(struct GBASIORFUDriver* rfu) {
 	    !(rfu->d.p->siocnt & RFU_START) || rfu->radioNotice || rfu->radioTimedOut ||
 	    mTimingIsScheduled(timing, &rfu->clockEvent) || mTimingIsScheduled(timing, &rfu->adapterEvent) ||
 	    mTimingIsScheduled(timing, &rfu->d.p->completeEvent)) return;
-	unsigned peer = MAX_GBAS;
+	unsigned peer = GBA_RFU_MAX_ADAPTERS;
 	uint32_t peerSession = 0;
 	if (rfu->role == GBA_RFU_HOST && rfu->radioPending && rfu->radioOfferPosted && !rfu->radioMatched &&
 	    rfu->radioOffer.slot < 4 && rfu->clients[rfu->radioOffer.slot].active) {
@@ -320,12 +352,12 @@ static void _cooperativeTryPark(struct GBASIORFUDriver* rfu) {
 		peer = rfu->hostPeer;
 		peerSession = rfu->hostRadioSession;
 	}
-	if (peer >= MAX_GBAS) return;
+	if (peer >= GBA_RFU_MAX_ADAPTERS) return;
 	MutexLock(&coordinator->mutex);
 	struct GBASIORFUDriver* target = coordinator->players[peer];
 	struct mLockstepUser* user = rfu->cooperativeUser;
 	if (!coordinator->cooperativeNowUs || rfu->cooperativePeerRetired ||
-	    rfu->playerId < 0 || rfu->playerId >= MAX_GBAS ||
+	    rfu->playerId < 0 || rfu->playerId >= GBA_RFU_MAX_ADAPTERS ||
 	    coordinator->players[rfu->playerId] != rfu || !user || !user->sleep || !user->wake ||
 	    !target || target == rfu || !peerSession || coordinator->cooperativeSessions[peer] != peerSession ||
 	    !target->cooperativeUser ||
@@ -373,7 +405,7 @@ static void _radioNewSession(struct GBASIORFUDriver* rfu) {
 			++rfu->coordinator->nextRadioSession;
 		}
 		rfu->radioSession = rfu->coordinator->nextRadioSession;
-		if (rfu->playerId >= 0 && rfu->playerId < MAX_GBAS &&
+		if (rfu->playerId >= 0 && rfu->playerId < GBA_RFU_MAX_ADAPTERS &&
 		    rfu->coordinator->players[rfu->playerId] == rfu) {
 			rfu->coordinator->cooperativeSessions[rfu->playerId] = rfu->radioSession;
 		}
@@ -529,7 +561,7 @@ static void _prearmedRetire(struct GBASIORFUDriver* rfu) {
 	if (!rfu->coordinator || rfu->playerId < 0) return;
 	const uint64_t generation = rfu->prearmedGeneration;
 	MutexLock(&rfu->coordinator->mutex);
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		struct GBASIORFUPrearmed* capture = &rfu->coordinator->prearmed[peer];
 		if (!capture->generation) continue;
 		if (capture->ready.source == rfu->playerId && capture->ready.sourceSession == rfu->radioSession) {
@@ -594,7 +626,7 @@ static void _prearmedPublish(struct GBASIORFUDriver* rfu) {
 }
 
 static void _prearmedRetirePeer(struct GBASIORFUDriver* rfu, unsigned slot) {
-	if (!rfu->prearmed || !rfu->coordinator || slot >= 4 || rfu->clients[slot].peer >= MAX_GBAS) return;
+	if (!rfu->prearmed || !rfu->coordinator || slot >= 4 || rfu->clients[slot].peer >= GBA_RFU_MAX_ADAPTERS) return;
 	MutexLock(&rfu->coordinator->mutex);
 	struct GBASIORFUPrearmed* capture = &rfu->coordinator->prearmed[rfu->clients[slot].peer];
 	if (capture->generation && _prearmedIdentity(rfu, &capture->ready, slot)) {
@@ -615,7 +647,7 @@ static void _enqueuePrearmedLocked(struct GBASIORFUDriver* target, const struct 
 
 static bool _prearmedPostOffer(struct GBASIORFUDriver* rfu, struct GBASIORFUMessage* offer) {
 	const unsigned peer = rfu->clients[offer->slot].peer;
-	if (!rfu->coordinator || peer >= MAX_GBAS || rfu->playerId < 0) return false;
+	if (!rfu->coordinator || peer >= GBA_RFU_MAX_ADAPTERS || rfu->playerId < 0) return false;
 	offer->source = rfu->playerId;
 	offer->sourceDevice = rfu->deviceId;
 	offer->sourceSession = rfu->radioSession;
@@ -669,7 +701,7 @@ static bool _prearmedPostOffer(struct GBASIORFUDriver* rfu, struct GBASIORFUMess
 
 static bool _prearmedAcceptReady(struct GBASIORFUDriver* rfu, const struct GBASIORFUMessage* ready) {
 	if (!ready->readinessGeneration) return true;
-	if (!rfu->prearmed || !rfu->coordinator || ready->source >= MAX_GBAS) return false;
+	if (!rfu->prearmed || !rfu->coordinator || ready->source >= GBA_RFU_MAX_ADAPTERS) return false;
 	bool valid = false;
 	MutexLock(&rfu->coordinator->mutex);
 	struct GBASIORFUPrearmed* capture = &rfu->coordinator->prearmed[ready->source];
@@ -692,7 +724,7 @@ static void _prearmedCancelTicket(struct GBASIORFUDriver* rfu) {
 	if (!rfu->prearmed || !rfu->radioPending || !rfu->coordinator ||
 	    rfu->radioOffer.slot >= 4) return;
 	const unsigned peer = rfu->role == GBA_RFU_CLIENT ? (unsigned) rfu->playerId : rfu->clients[rfu->radioOffer.slot].peer;
-	if (peer >= MAX_GBAS) return;
+	if (peer >= GBA_RFU_MAX_ADAPTERS) return;
 	MutexLock(&rfu->coordinator->mutex);
 	struct GBASIORFUPrearmed* capture = &rfu->coordinator->prearmed[peer];
 	if (capture->generation && capture->generation == rfu->radioOffer.readinessGeneration &&
@@ -713,7 +745,7 @@ static int _prearmedPostRelease(struct GBASIORFUDriver* rfu, struct GBASIORFUMes
 	if (!release->readinessGeneration) return _post(rfu, rfu->clients[release->slot].peer, release) ? 1 : 0;
 	if (!rfu->prearmed || !rfu->coordinator || release->slot >= 4) return -1;
 	const unsigned peer = rfu->clients[rfu->radioOffer.slot].peer;
-	if (peer >= MAX_GBAS) return -1;
+	if (peer >= GBA_RFU_MAX_ADAPTERS) return -1;
 	release->source = rfu->playerId;
 	release->sourceDevice = rfu->deviceId;
 	release->sourceSession = rfu->radioSession;
@@ -1011,15 +1043,24 @@ static bool _radioOffer(struct GBASIORFUDriver* rfu, struct GBASIORFUMessage* me
 	return true;
 }
 
+static uint8_t _nextClientSlot(const struct GBASIORFUDriver* rfu) {
+	if (rfu->role != GBA_RFU_HOST || !rfu->accepting) return 0xFF;
+	for (unsigned slot = 0; slot < rfu->maxClients; ++slot) {
+		if (!rfu->clients[slot].active) return slot;
+	}
+	return 0xFF;
+}
+
 static void _broadcast(struct GBASIORFUDriver* rfu) {
-	if (rfu->role != GBA_RFU_HOST || !rfu->accepting) {
+	if (rfu->role != GBA_RFU_HOST) {
 		return;
 	}
 	struct GBASIORFUMessage message = {0};
 	message.type = RFU_BROADCAST;
+	message.slot = _nextClientSlot(rfu);
 	message.bytes = sizeof(rfu->broadcast);
 	memcpy(message.data, rfu->broadcast, sizeof(rfu->broadcast));
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		if ((int) peer != rfu->playerId) {
 			_post(rfu, peer, &message);
 		}
@@ -1066,7 +1107,7 @@ static void _disconnect(struct GBASIORFUDriver* rfu) {
 }
 
 static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMessage* message) {
-	if (message->source >= MAX_GBAS || message->bytes > GBA_RFU_MAX_BYTES) {
+	if (message->source >= GBA_RFU_MAX_ADAPTERS || message->bytes > GBA_RFU_MAX_BYTES) {
 		return;
 	}
 	struct GBASIORFUMessage reply = {0};
@@ -1076,8 +1117,11 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 			break;
 		}
 		struct GBASIORFUBroadcast* entry = &rfu->peerBroadcast[message->source];
+		if (entry->valid && entry->radioSession != message->sourceSession &&
+		    (int32_t) (message->sourceSession - entry->radioSession) <= 0) break;
 		entry->valid = true;
 		entry->ttl = 255;
+		entry->nextSlot = message->slot;
 		entry->device = message->sourceDevice;
 		entry->radioSession = message->sourceSession;
 		memcpy(entry->data, message->data, sizeof(entry->data));
@@ -1095,7 +1139,7 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 				}
 			}
 			if (slot == 4) {
-				for (slot = 0; slot < 4 && rfu->clients[slot].active; ++slot) {}
+				slot = _nextClientSlot(rfu);
 			}
 			if (slot < 4) {
 				struct GBASIORFUClient* client = &rfu->clients[slot];
@@ -1120,8 +1164,10 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 							rfu->radioLastTime = mTimingCurrentTime(_timing(rfu));
 						}
 					}
-					client->device = 0x6500 | ((rfu->playerId < 0 ? 0 : rfu->playerId) << 6) |
-						((rfu->generation * 4 + slot + 1) & 0x3F);
+					/* The assigned ID belongs to the client's global node, not
+					 * the host's local slot. Parallel groups cannot alias it. */
+					client->device = 0x8000 | (message->source << 8) |
+						(message->sourceSession & 0xFF);
 				}
 				reply.type = RFU_CONNECT_ACK;
 				client->radioSession = message->sourceSession;
@@ -1134,6 +1180,7 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 		_log(rfu, "event connectReply type=%u accepting=%d requestedDevice=%04X targetSession=%u sourceSession=%u",
 			reply.type, rfu->accepting, message->destinationDevice, message->targetSession, message->sourceSession);
 		_post(rfu, message->source, &reply);
+		if (reply.type == RFU_CONNECT_ACK) _broadcast(rfu);
 		break;
 	}
 	case RFU_CONNECT_ACK:
@@ -1198,6 +1245,7 @@ static void _handleMessage(struct GBASIORFUDriver* rfu, const struct GBASIORFUMe
 				memset(client, 0, sizeof(*client));
 				rfu->txTargetMask &= ~(1U << message->slot);
 				rfu->txAckMask &= ~(1U << message->slot);
+				_broadcast(rfu);
 			}
 		}
 		break;
@@ -1479,6 +1527,33 @@ static void _sendData(struct GBASIORFUDriver* rfu) {
 	_logSendSnapshot(rfu, &message);
 }
 
+static unsigned _readBroadcastPage(struct GBASIORFUDriver* rfu) {
+	/* A hardware scan sees at most four hosts. Append newly heard peers in
+	 * this cycle's discovery order, never reshuffle repeated poll/end calls.
+	 * Completing a cycle advances past its last host so all forty adapters
+	 * are eventually discoverable without enlarging the ROM-facing reply. */
+	for (unsigned offset = 0; offset < GBA_RFU_MAX_ADAPTERS && rfu->discoveryCount < 4; ++offset) {
+		unsigned peer = (rfu->discoveryCursor + offset) % GBA_RFU_MAX_ADAPTERS;
+		if (!rfu->peerBroadcast[peer].valid) continue;
+		bool selected = false;
+		for (unsigned i = 0; i < rfu->discoveryCount; ++i) {
+			if (rfu->discoveryPeers[i] == peer) selected = true;
+		}
+		if (selected) continue;
+		rfu->discoveryPeers[rfu->discoveryCount++] = peer;
+		rfu->discoveryNext = (peer + 1) % GBA_RFU_MAX_ADAPTERS;
+	}
+	unsigned words = 0;
+	for (unsigned i = 0; i < rfu->discoveryCount; ++i) {
+		const struct GBASIORFUBroadcast* entry = &rfu->peerBroadcast[rfu->discoveryPeers[i]];
+		if (!entry->valid) continue;
+		rfu->response[words++] = entry->device | ((uint32_t) entry->nextSlot << 16);
+		memcpy(&rfu->response[words], entry->data, sizeof(entry->data));
+		words += 6;
+	}
+	return words;
+}
+
 static int _command(struct GBASIORFUDriver* rfu) {
 	memset(rfu->response, 0, sizeof(rfu->response));
 	rfu->responseIndex = 0;
@@ -1492,6 +1567,8 @@ static int _command(struct GBASIORFUDriver* rfu) {
 		}
 		rfu->timeoutFrames = rfu->payload[0];
 		rfu->retryCount = rfu->payload[0] >> 8;
+		rfu->maxClients = 4 - ((rfu->payload[0] >> 16) & 3);
+		_broadcast(rfu);
 		_log(rfu, "event waitLimits timeoutFrames=%u retryCount=%u", rfu->timeoutFrames, rfu->retryCount);
 		return 0;
 	case 0x11:
@@ -1525,7 +1602,7 @@ static int _command(struct GBASIORFUDriver* rfu) {
 				rfu->response[words++] = rfu->clients[slot].device | (slot << 16);
 			}
 		}
-		rfu->response[0] = words - 1;
+		rfu->response[0] = _nextClientSlot(rfu);
 		return words;
 	}
 	case 0x16:
@@ -1566,6 +1643,7 @@ static int _command(struct GBASIORFUDriver* rfu) {
 			return -1;
 		}
 		rfu->accepting = false;
+		_broadcast(rfu);
 		for (unsigned slot = 0; slot < 4; ++slot) {
 			if (rfu->clients[slot].active) {
 				return 0;
@@ -1574,25 +1652,20 @@ static int _command(struct GBASIORFUDriver* rfu) {
 		rfu->role = GBA_RFU_IDLE;
 		return 0;
 	case 0x1C:
+		rfu->discoveryCount = 0;
+		rfu->discoveryNext = rfu->discoveryCursor;
 		return 0;
 	case 0x1D:
 	case 0x1E: {
-		unsigned words = 0;
-		for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
-			struct GBASIORFUBroadcast* entry = &rfu->peerBroadcast[peer];
-			if (entry->valid) {
-				rfu->response[words++] = entry->device;
-				memcpy(&rfu->response[words], entry->data, sizeof(entry->data));
-				words += 6;
-			}
-		}
+		unsigned words = _readBroadcastPage(rfu);
+		if (rfu->command == 0x1E) rfu->discoveryCursor = rfu->discoveryNext;
 		return words;
 	}
 	case 0x1F:
 		if (rfu->role == GBA_RFU_HOST || rfu->sendWordsReceived != 1) {
 			return -1;
 		}
-		for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+		for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 			if (rfu->peerBroadcast[peer].valid && rfu->peerBroadcast[peer].device == (rfu->payload[0] & 0xFFFF)) {
 				if (rfu->synchronize) {
 					/* A fresh connection attempt cannot accept a held ACK,
@@ -1731,6 +1804,7 @@ static int _command(struct GBASIORFUDriver* rfu) {
 					rfu->txAckMask &= ~(1U << slot);
 				}
 			}
+			_broadcast(rfu);
 		} else {
 			_disconnect(rfu);
 		}
@@ -2023,7 +2097,7 @@ static void _maintenanceEvent(struct mTiming* timing, void* context, uint32_t cy
 	UNUSED(cyclesLate);
 	struct GBASIORFUDriver* rfu = context;
 	_drain(rfu);
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		struct GBASIORFUBroadcast* entry = &rfu->peerBroadcast[peer];
 		if (entry->valid && !--entry->ttl) {
 			entry->valid = false;
@@ -2058,7 +2132,7 @@ void GBASIORFUCoordinatorInit(struct GBASIORFUCoordinator* coordinator) {
 void GBASIORFUCoordinatorDeinit(struct GBASIORFUCoordinator* coordinator) {
 	/* Usually empty after detach. Retire hooks before destroying protection. */
 	MutexLock(&coordinator->mutex);
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		struct GBASIORFUDriver* target = coordinator->players[peer];
 		if (!target) continue;
 		_cooperativeRetireLocked(target);
@@ -2076,7 +2150,7 @@ void GBASIORFUCoordinatorService(struct GBASIORFUCoordinator* coordinator, uint6
 	/* A reset/backwards service clock cannot strand an old deadline. */
 	const bool invalidClock = !nowUs || nowUs < coordinator->cooperativeNowUs;
 	coordinator->cooperativeNowUs = invalidClock ? 0 : nowUs;
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		struct GBASIORFUDriver* target = coordinator->players[peer];
 		if (!target || !target->cooperativeDeadlineUs) continue;
 		if (invalidClock || nowUs >= target->cooperativeDeadlineUs) {
@@ -2091,14 +2165,14 @@ void GBASIORFUCoordinatorService(struct GBASIORFUCoordinator* coordinator, uint6
 void GBASIORFUCoordinatorAttach(struct GBASIORFUCoordinator* coordinator, struct GBASIORFUDriver* rfu) {
 	MutexLock(&coordinator->mutex);
 	rfu->playerId = -1;
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		if (coordinator->players[peer] == rfu) {
 			rfu->playerId = peer;
 			break;
 		}
 	}
 	if (rfu->playerId < 0) {
-		for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+		for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 			if (!coordinator->players[peer]) {
 				coordinator->players[peer] = rfu;
 				rfu->playerId = peer;
@@ -2116,7 +2190,7 @@ void GBASIORFUCoordinatorAttach(struct GBASIORFUCoordinator* coordinator, struct
 void GBASIORFUCoordinatorDetach(struct GBASIORFUCoordinator* coordinator, struct GBASIORFUDriver* rfu) {
 	_disconnect(rfu);
 	MutexLock(&coordinator->mutex);
-	for (unsigned peer = 0; peer < MAX_GBAS; ++peer) {
+	for (unsigned peer = 0; peer < GBA_RFU_MAX_ADAPTERS; ++peer) {
 		if (coordinator->players[peer] == rfu) {
 			_cooperativeRetireLocked(rfu);
 			coordinator->players[peer] = NULL;
@@ -2173,12 +2247,16 @@ static void _reset(struct GBASIODriver* driver) {
 	rfu->asyncIndex = 0;
 	rfu->timeoutFrames = 0;
 	rfu->retryCount = 0;
+	rfu->maxClients = 4;
 	rfu->waitCycles = 0;
 	rfu->retryCycles = 0;
 	rfu->deviceId = 0;
 	rfu->hasBroadcast = false;
 	memset(rfu->broadcast, 0, sizeof(rfu->broadcast));
 	memset(rfu->peerBroadcast, 0, sizeof(rfu->peerBroadcast));
+	rfu->discoveryCount = 0;
+	rfu->discoveryCursor = 0;
+	rfu->discoveryNext = 0;
 	if (rfu->coordinator) {
 		MutexLock(&rfu->coordinator->mutex);
 		rfu->incomingCount = 0;
@@ -2322,6 +2400,7 @@ static void _finishMultiplayer(struct GBASIODriver* driver, uint16_t data[MAX_GB
 void GBASIORFUDriverCreate(struct GBASIORFUDriver* rfu) {
 	memset(rfu, 0, sizeof(*rfu));
 	rfu->playerId = -1;
+	rfu->maxClients = 4;
 	rfu->d.init = _init;
 	rfu->d.deinit = _deinit;
 	rfu->d.reset = _reset;
