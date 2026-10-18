@@ -26,11 +26,14 @@ or modification.
 
 ## Matching release materials
 
-This checkout is an unpublished expanded-radio prototype. Its accompanying
-source archive and BUILD-INFO identify its own exact commit, not the older
-public executable commit below. Dependencies are unchanged and their complete
-source remains in the v0.2.0-beta.1 release. Prototype build objects and history
-are preserved locally; any future public binary needs matching relink assets.
+The [v0.3.0-beta.1 expanded-room release](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.3.0-beta.1)
+provides the exact application source at
+`cee6c249acd626c5b188bc91d042b345f6da0e5a`, its matching fresh build/relink kit,
+unchanged complete dependency sources and SHA-256 checksums. Its executable
+version is `0.11-codex/wireless-large-room-9168-wireless-adapter-v0.2.0-beta.1-6-gcee6c249a`.
+The v0.3.0-beta.1 tag resolves to that exact executable source revision;
+the embedded development description retains the older tag from build time.
+Publication-only documentation changes do not alter that pairing.
 
 The [v0.2.0-beta.1 four-player release](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1)
 provides the exact application source at

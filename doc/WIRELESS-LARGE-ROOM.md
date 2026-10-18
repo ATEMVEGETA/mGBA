@@ -1,11 +1,11 @@
 # Expanded local Wireless Adapter environment
 
-This is a separate, unpublished prototype based on the user-tested four-player
-release. It permits **up to 40 virtual adapters/windows** in Wireless Adapter
+Version v0.3.0-beta.1 builds on the user-tested four-player release.
+It permits **up to 40 virtual adapters/windows** in Wireless Adapter
 mode, while leaving Link Cable at four systems and Game Boy link at two.
 Forty is an experimental safety ceiling, not a claim of unlimited resources
-or confirmed 40-player gameplay. The released build and VEGETA installation
-were not modified for this prototype.
+or confirmed 40-player gameplay. The user reported successful expanded-room
+operation and approved publication, but the exact test population was not recorded.
 
 ## What the fifth game does
 
@@ -25,10 +25,9 @@ The fifth game must be opened with **File → New multiplayer window** in the
 same application process. A separate mGBA executable process is not connected
 by this implementation. There is no LAN/internet or real-hardware transport.
 
-## Test steps
+## Setup and testing
 
-1. Use this package in its own directory with copies of saves. Do not overwrite
-   the working installation or reuse a live connection's savestate.
+1. Back up your saves before updating. Do not reuse a live connection's savestate.
 2. Before loading games, choose **File → GBA link type (next session) →
    Wireless Adapter**.
 3. Open the first compatible game, then create four additional multiplayer
@@ -73,10 +72,10 @@ illegal fifth child. Offscreen Qt checks cover window/input/capacity/save
 claims and lifecycle; they do not execute a game CPU loop or use ROMs/BIOS.
 The protocol suite has 166 cases in both deterministic and native-mutex
 variants, the native-owner stress suite has 64, and the offscreen Qt fixture
-has 10,173 checks. Actual fifth-game
-Union Room behavior remains for the user's manual trial.
+has 10,173 checks. These automated fixtures are not 40-game gameplay tests.
 
-The prototype has not been uploaded to GitHub or installed into VEGETA.
+The user subsequently reported that the expanded candidate works perfectly;
+the exact player count and full activity matrix were not specified.
 No games, ROMs, BIOS, saves or personal controls are included.
 
 ## Protocol references

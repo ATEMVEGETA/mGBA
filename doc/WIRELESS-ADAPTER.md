@@ -1,12 +1,7 @@
 # Wireless Adapter for mGBA
 
-This checkout additionally contains an unpublished expanded-radio prototype.
-Use [the large-room test guide](WIRELESS-LARGE-ROOM.md) for its 5–40-window
-workflow and coverage limits. The guide below describes the published
-four-player v0.2.0-beta.1 base, which remains unchanged.
-
 An unofficial, experimental addition to the mGBA Qt frontend for local
-Wireless Adapter communication between up to four emulated Game Boy Advance systems
+Wireless Adapter communication among up to 40 virtual Game Boy Advance adapters
 on one computer. This is not an upstream mGBA release.
 
 The original Link Cable mode remains available and is the default. Wireless
@@ -14,9 +9,12 @@ Adapter mode is a separate choice, not a replacement for the cable.
 
 ## Current status
 
-Version v0.2.0-beta.1 extends the original two-player beta to four local players.
-The user successfully tested four-player Pokémon Union Room play with its
-exact executable. Broader compatibility still needs manual testing.
+Version v0.3.0-beta.1 separates the local radio population from cable's
+four-player limit. It supports up to 40 windows in one process; individual
+wireless data groups still contain one host plus at most four clients.
+The user reported successful expanded-room operation; the exact test population
+was not recorded. Forty is a safety ceiling, not confirmed 40-player gameplay.
+See [the expanded-room guide](WIRELESS-LARGE-ROOM.md) for details.
 
 Earlier custom development builds received successful user reports for
 Pokémon Jump, Dodrio Berry Picking, the Union Room, the Trade Room, and an
@@ -26,7 +24,7 @@ combination. Wireless timing and compatibility remain experimental.
 
 See [the release notes](WIRELESS-RELEASE-NOTES.md) for package status and known
 limitations. Downloads and matching source are on the
-[beta release page](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1).
+[beta release page](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.3.0-beta.1).
 Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
 
 ## Before testing
@@ -48,7 +46,8 @@ Build and packaging instructions are in [WIRELESS-BUILD.md](WIRELESS-BUILD.md).
 2. Choose **File → GBA link type (next session) → Wireless Adapter**.
 3. Open the first GBA game normally.
 4. Choose **File → New multiplayer window**, then open the next GBA game
-   in that window. Repeat for up to four players total. All windows must
+   in that window. Repeat for additional players, starting small and staying
+   within your computer's resources (40 adapters maximum). All windows must
    belong to the same mGBA process; opening independent copies of the program
    does not create this local link.
 5. Start the wireless activity from the games' own menus. Follow their normal
@@ -69,6 +68,8 @@ Close the games in all multiplayer windows, select **File → GBA link type
 (next session) → Link Cable**, then open the games again. Use this mode for
 activities that require the cable. One multiplayer session cannot use both
 adapter types at once.
+Cable remains limited to four systems and Game Boy link to two. Close extra
+empty windows before starting a cable session.
 
 Upstream input bindings, fast-forward behavior, and e-Reader behavior remain
 in place. This wireless-only port does not include unrelated features from
@@ -76,9 +77,9 @@ earlier custom builds.
 
 ## Limitations and troubleshooting
 
-- This version allows up to four local GBA players in the same application
-  process. Actual activity limits still depend on the game. It does not add
-  an unlimited number of players or a fifth frontend window.
+- This version allows up to 40 local adapters/windows in the same application
+  process. An active data group has a host plus up to four clients; actual
+  activity and room-display limits still depend on the game. It is not unlimited.
 - There is no LAN or internet transport, connection to another emulator,
   or bridge to a physical Wireless Adapter or real GBA.
 - A savestate does not serialize the shared RFU session. Do not expect loading

@@ -1,13 +1,30 @@
 # mGBA Wireless Adapter — beta release notes
 
-## Unpublished expanded-radio prototype
+## v0.3.0-beta.1 — expanded local radio environment
 
 Wireless environment capacity is separated from cable's four-console ABI.
-This candidate permits 40 virtual adapters, with bounded rotating discovery
+This version permits up to 40 virtual adapters/windows, with bounded rotating discovery
 pages, globally distinct adapter identities and safe player/input/save claims
 above the old four-window/32-bit-mask boundaries. Hardware data groups remain
-one host plus four clients. Actual larger-room gameplay awaits user testing.
-See [the prototype guide](WIRELESS-LARGE-ROOM.md). No new release was published.
+one host plus four clients. Link Cable remains four-player and Game Boy link
+two-player. Use New multiplayer window in a single application process;
+independent mGBA processes, LAN and internet transport are not supported.
+See [the expanded-room guide](WIRELESS-LARGE-ROOM.md).
+
+The user reported that the expanded-room candidate works perfectly and
+authorized this release. The exact manually tested population was not
+recorded; this does not establish 40-player gameplay or every game's own room
+display/group limits. Automated checks cover 166 protocol cases in both
+deterministic and native-mutex variants, 64 native-owner stress cases, and
+10,173 inert Qt integration checks without ROMs, BIOS or gameplay execution.
+
+The release executables are byte-identical to the approved candidate.
+Executable source: `cee6c249acd626c5b188bc91d042b345f6da0e5a`.
+Version: `0.11-codex/wireless-large-room-9168-wireless-adapter-v0.2.0-beta.1-6-gcee6c249a`.
+The v0.3.0-beta.1 tag points to that exact commit, even though its embedded
+development description includes the preceding v0.2.0 tag. Later publication
+documentation changes do not change the binary/source pairing. Matching source,
+unchanged dependency sources and a fresh build/relink kit accompany this release.
 
 ## v0.2.0-beta.1 — four local players
 
@@ -73,8 +90,9 @@ in-game saving, or closing both windows.
 
 ## Known limits
 
-- v0.1.0-beta.1 supports two local GBA players; v0.2.0-beta.1 permits four
-  windows in one process, with user-confirmed four-player Union Room play.
+- v0.3.0-beta.1 permits up to 40 adapters/windows within one local process.
+  Real RFU data groups remain one host and up to four clients; games may impose
+  smaller activity/display limits. Prior v0.2.0-beta.1 permits four windows.
 - No LAN, internet play, other-emulator transport, or real-hardware adapter
   connection.
 - Shared RFU sessions are not serialized in savestates. Loading states or

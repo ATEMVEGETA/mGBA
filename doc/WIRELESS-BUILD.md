@@ -19,7 +19,7 @@ cmake --build build-wireless --target mgba mgba-qt -j4
 ./tests/qt-wireless/run.ps1
 ```
 
-Run test variants sequentially. This prototype's deterministic suites cover
+Run test variants sequentially. This release's deterministic suites cover
 166 cases, including five/eight/forty-adapter discovery and independent groups;
 the Windows concurrent-owner suite covers 64; the actual Qt configuration,
 menu, session-selection and expanded attachment smoke covers 10,173 checks

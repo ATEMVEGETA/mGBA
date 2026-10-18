@@ -1,40 +1,42 @@
 mGBA
 ====
 
-> Local development branch: **expanded Wireless Adapter environment** with
-> up to 40 virtual adapters, independent of the four-system Link Cable limit.
-> This is an unpublished test candidate, not a replacement for the working
-> v0.2.0-beta.1 release below. See [the large-room test guide](doc/WIRELESS-LARGE-ROOM.md).
-
 > [!IMPORTANT]
 > This is the **unofficial mGBA Wireless Adapter fork**. It adds local wireless
-> communication for up to four Game Boy Advance games on one computer, with a native
+> communication for up to 40 Game Boy Advance adapters on one computer, with a native
 > **File → GBA link type (next session) → Wireless Adapter** menu option.
 > It is not affiliated with or endorsed by the upstream mGBA project.
 
-## Wireless Adapter v0.2.0-beta.1
+## Wireless Adapter v0.3.0-beta.1
 
-This version extends local Wireless Adapter play from two to **up to four
-players**. Four-player Pokémon Union Room play was tested successfully by the
-user. Compatibility with every game, revision, save or activity is not implied.
+This version separates the shared wireless environment from Link Cable's
+four-system limit. It permits **up to 40 local virtual adapters/windows**, while
+each active wireless data group remains one host plus up to four clients.
+The user reported that the expanded-room candidate works perfectly and approved
+this release; the exact tested population was not recorded. Forty is a capacity
+ceiling, not a claim of confirmed 40-player gameplay or universal compatibility.
 
 ## Wireless Adapter download
 
-**[Download mGBA Wireless Adapter for Windows x64](https://github.com/ATEMVEGETA/mGBA/releases/download/wireless-adapter-v0.2.0-beta.1/mGBA-0.11-Wireless-Adapter-Windows-x64-v0.2.0-beta.1.zip)**
+**[Download mGBA Wireless Adapter for Windows x64](https://github.com/ATEMVEGETA/mGBA/releases/download/wireless-adapter-v0.3.0-beta.1/mGBA-0.11-Wireless-Adapter-Windows-x64-v0.3.0-beta.1.zip)**
 
-See the [v0.2.0-beta.1 release page](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1)
+See the [v0.3.0-beta.1 release page](https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.3.0-beta.1)
 for SHA-256 checksums, the exact matching mGBA source, dependency sources and
 build/relink materials. Only the Windows ZIP is needed to run the emulator.
 
 [Setup and limitations](doc/WIRELESS-ADAPTER.md) ·
+[Expanded local rooms](doc/WIRELESS-LARGE-ROOM.md) ·
 [Release notes](doc/WIRELESS-RELEASE-NOTES.md) ·
 [Source and licenses](doc/WIRELESS-LICENSES.md) ·
 [Build instructions](doc/WIRELESS-BUILD.md)
 
 Link Cable remains the default. Close all games, select **Wireless Adapter**,
 open the first game, then use **File → New multiplayer window** for each other
-player, up to four windows total. All games must run in the same application
+player, starting with a small population and increasing within your computer's
+resources (40 adapters maximum). All games must run in the same application
 process; this is not LAN or internet multiplayer, or a connection to real hardware.
+Independent launches do not share the environment. Link Cable stays limited to
+four systems and Game Boy link to two.
 
 The fork is based on mGBA development master, not the official 0.10.5 release.
 
