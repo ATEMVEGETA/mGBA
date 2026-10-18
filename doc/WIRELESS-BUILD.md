@@ -112,9 +112,11 @@ read-only by passing `-DependencyDirectory <path-to-build-compact-deps>` to
 both compact helpers and a separate `-BuildDirectory`. Also pass the matching
 `-StaticQtPrefix`, `-StaticEpoxyPrefix` and `-FFmpegSourceDirectory` to the
 packager. This does not modify the earlier checkout or its release artifacts.
-For this four-player build, the user confirmed successful Union Room play.
-Only protocol, native-mutex/stress and inert offscreen integration fixtures
-were run by the coding agent during preparation.
+The preceding published four-player build received the user's successful
+Union Room report. This expanded prototype has not received a gameplay test;
+its fifth-game behavior remains pending. Only protocol, native-mutex/stress
+and inert offscreen integration fixtures were run by the coding agent during
+prototype preparation; the current production executable was not launched.
 
 Statically linked GPL/LGPL and other dependencies require matching source,
 build and relink materials before publication. Preserve dependency sources,

@@ -20,21 +20,25 @@ scripts, shaders, documentation and license notices together.
 To enable wireless, close all games and choose **File → GBA link type (next
 session) → Wireless Adapter**. Open the first game, then use **File → New
 multiplayer window** for each other game in the same application process,
-up to four players total. Do not start four independent mGBA processes.
+starting with five games, then eight. The prototype's safety ceiling is 40
+windows, not a claim of 40-player compatibility. Independent mGBA processes
+and other PCs are not connected; there is no LAN transport in this build.
 Choose **Link Cable** instead to disable the Wireless Adapter.
 
 Back up your saves before testing. This package has no ROMs, BIOS or saves.
-See [the full guide](docs/WIRELESS-ADAPTER.md) for details and limitations.
+See [the prototype guide](docs/WIRELESS-LARGE-ROOM.md) for details and limitations.
 Its exact source commit and checksums are recorded under `docs`.
 
-Version v0.2.0-beta.1 supports up to four local players. The user successfully
-tested four-player Pokémon Union Room play with this executable. Other games
-and activities still need compatibility testing. Its exact application source
-commit and archive hash are recorded in `docs/BUILD-INFO.txt`.
+The preceding published v0.2.0-beta.1 supports four local players and received
+a successful four-player Pokémon Union Room report. This expanded prototype
+has different executables and has not yet received a gameplay test. Its exact
+source commit and archive hash are recorded in `docs/BUILD-INFO.txt`.
 
 Original mGBA controls, fast-forward and e-Reader behavior are retained.
-The matching application source, unchanged dependency sources and fresh
-build/relink materials are separate downloads at:
+The matching prototype application source accompanies this local handoff.
+The preceding release's application source, unchanged dependency sources and
+build/relink materials are available at the following page; it does not
+contain these prototype executables or their exact application source:
 
 https://github.com/ATEMVEGETA/mGBA/releases/tag/wireless-adapter-v0.2.0-beta.1
 
