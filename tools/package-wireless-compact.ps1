@@ -31,7 +31,11 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot record source commit.' }
 if (& git -C $root status --porcelain --untracked-files=all) { throw 'Commit outstanding source changes before packaging.' }
 $versionSource = [IO.File]::ReadAllText((Join-Path $BuildDirectory 'version.c'))
 $version = [regex]::Match($versionSource, 'projectVersion = "([^"]+)"').Groups[1].Value
-if (-not $version -or $version.EndsWith('-dirty') -or $versionSource -notmatch ('gitCommit = "' + [regex]::Escape($commit) + '"')) {
+$binaryCommit = [regex]::Match($versionSource, 'gitCommit = "([^"]+)"').Groups[1].Value
+# Upstream uses git describe: after an annotated release tag its full commit
+# field is tag-distance-g<40-character-SHA>, rather than the bare SHA.
+$matchingCommit = $binaryCommit -eq $commit -or $binaryCommit -match ('-g' + [regex]::Escape($commit) + '$')
+if (-not $version -or $version.EndsWith('-dirty') -or -not $matchingCommit) {
     throw 'Reconfigure and rebuild from the clean source commit.'
 }
 $objdump = Join-Path $RuntimePrefix 'bin/objdump.exe'
